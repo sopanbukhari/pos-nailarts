@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Sistem Point of Sale (POS) & Manajemen Salon Kuku (Nail Art Salon POS)",
   "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
   "scripts": {
     "dev": "concurrently -n \"SERVER,CLIENT\" -c \"magenta,cyan\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "dev:server": "npm run dev --prefix server",

@@ -31,9 +31,11 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 const PORT = ENV.PORT;
-app.listen(PORT, () => {
-  console.log(`🌸 Nail Art POS Server berjalan aktif di http://localhost:${PORT}`);
-  console.log(`💅 Environment: ${ENV.NODE_ENV}`);
-});
+if (process.env.VERCEL !== '1' && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  app.listen(PORT, () => {
+    console.log(`🌸 Nail Art POS Server berjalan aktif di http://localhost:${PORT}`);
+    console.log(`💅 Environment: ${ENV.NODE_ENV}`);
+  });
+}
 
 export default app;
