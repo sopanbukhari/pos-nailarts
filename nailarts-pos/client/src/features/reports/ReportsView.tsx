@@ -8,10 +8,13 @@ import {
   Award,
   Calendar,
   Sparkles,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { formatDate, formatRupiah } from '../../utils/format';
+import { ReceiptModal } from '../pos/ReceiptModal';
+import { Transaction } from '../../types';
 import api from '../../lib/axios';
 
 export const ReportsView: React.FC = () => {
@@ -19,6 +22,7 @@ export const ReportsView: React.FC = () => {
   const [topServices, setTopServices] = useState<any[]>([]);
   const [weeklyRevenue, setWeeklyRevenue] = useState<any[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -203,6 +207,7 @@ export const ReportsView: React.FC = () => {
                 <th className="py-3 px-4">Metode</th>
                 <th className="py-3 px-4">Komisi Artist</th>
                 <th className="py-3 px-4 text-right">Total Transaksi</th>
+                <th className="py-3 px-4 text-center">Struk WA</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -223,12 +228,29 @@ export const ReportsView: React.FC = () => {
                   <td className="py-3 px-4 text-right font-black text-slate-900">
                     {formatRupiah(tx.total)}
                   </td>
+                  <td className="py-3 px-4 text-center">
+                    <button
+                      onClick={() => setSelectedTx(tx)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-semibold transition-colors shadow-2xs active:scale-95"
+                      title="Lihat Struk / Kirim WhatsApp"
+                    >
+                      <MessageCircle size={12} />
+                      <span>Kirim WA</span>
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Modal Struk & Kirim WhatsApp */}
+      <ReceiptModal
+        isOpen={!!selectedTx}
+        onClose={() => setSelectedTx(null)}
+        transaction={selectedTx}
+      />
     </div>
   );
 };
