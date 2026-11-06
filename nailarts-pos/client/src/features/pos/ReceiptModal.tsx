@@ -15,6 +15,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { Transaction } from '../../types';
 import { formatDate, formatRupiah, formatWhatsAppNumber } from '../../utils/format';
+import { useSalonStore } from '../../store/salonStore';
 
 interface ReceiptModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   onClose,
   transaction,
 }) => {
+  const { settings } = useSalonStore();
   const receiptRef = useRef<HTMLDivElement>(null);
   const [phone, setPhone] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -127,7 +129,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       const canvas = await captureReceiptCanvas();
       if (!canvas) return;
 
-      const defaultCaption = `Halo Kak ${transaction.customer?.name || ''}, ini struk pembayaran resmi dari NailArt Studio Salon (No. Invoice: ${transaction.invoiceNumber}). Terima kasih telah mempercantik kuku Anda bersama kami! 💅✨`;
+      const defaultCaption = `Halo Kak ${transaction.customer?.name || ''}, ini struk pembayaran resmi dari ${settings.name} (No. Invoice: ${transaction.invoiceNumber}). Terima kasih telah mempercantik kuku Anda bersama kami! 💅✨`;
 
       canvas.toBlob(async (blob) => {
         if (!blob) return;
@@ -278,9 +280,9 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
         >
           {/* Header Salon */}
           <div className="text-center border-b border-dashed border-slate-300 pb-3">
-            <h3 className="font-extrabold text-sm uppercase tracking-wide">NAILART STUDIO SALON</h3>
-            <p className="text-[10px] text-slate-500">Jl. Senopati Raya No. 42, Kebayoran Baru</p>
-            <p className="text-[10px] text-slate-500">Jakarta Selatan • Telp: 0812-3456-7890</p>
+            <h3 className="font-extrabold text-sm uppercase tracking-wide">{settings.name}</h3>
+            <p className="text-[10px] text-slate-500">{settings.address}</p>
+            <p className="text-[10px] text-slate-500">{settings.branchName} • Telp: {settings.phone}</p>
           </div>
 
           {/* Invoice Info */}
@@ -363,8 +365,10 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           {/* Footer Receipt Note */}
           <div className="text-center text-[10px] text-slate-500 space-y-0.5 pt-1">
             <p className="font-semibold">Terima Kasih atas Kunjungan Anda!</p>
-            <p>Kuku cantik & terawat adalah kebahagiaan kami 💅</p>
-            <p className="text-[9px] text-slate-400">Tag us on Instagram: @nailart.studio</p>
+            <p>{settings.footerNote}</p>
+            {settings.instagram && (
+              <p className="text-[9px] text-slate-400">Instagram: {settings.instagram}</p>
+            )}
           </div>
         </div>
 

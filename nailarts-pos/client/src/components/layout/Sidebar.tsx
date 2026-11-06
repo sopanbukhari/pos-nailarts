@@ -10,10 +10,17 @@ import {
   BarChart3,
   LogOut,
   Flower2,
+  Crown,
+  Gem,
+  Heart,
+  Paintbrush,
+  Star,
+  Settings,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useSalonStore, SalonIconType } from '../../store/salonStore';
 
-export type NavTab = 'pos' | 'booking' | 'catalog' | 'customers' | 'inventory' | 'staff' | 'reports';
+export type NavTab = 'pos' | 'booking' | 'catalog' | 'customers' | 'inventory' | 'staff' | 'reports' | 'settings';
 
 interface SidebarProps {
   currentTab: NavTab;
@@ -22,6 +29,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => {
   const { user, logout } = useAuthStore();
+  const { settings } = useSalonStore();
 
   const navItems = [
     { id: 'pos', label: 'Kasir POS', icon: ShoppingBag, roles: ['ADMIN', 'CASHIER'] },
@@ -31,26 +39,77 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
     { id: 'inventory', label: 'Stok & Inventaris', icon: Package, roles: ['ADMIN', 'CASHIER'] },
     { id: 'staff', label: 'Artis & Komisi', icon: UserCheck, roles: ['ADMIN', 'ARTIST'] },
     { id: 'reports', label: 'Laporan Omzet', icon: BarChart3, roles: ['ADMIN'] },
+    { id: 'settings', label: 'Pengaturan Salon', icon: Settings, roles: ['ADMIN'] },
   ];
 
-  const filteredNavItems = navItems.filter(item => {
+  const filteredNavItems = navItems.filter((item) => {
     if (!user) return true;
     return item.roles.includes(user.role);
   });
 
+  const getSalonIcon = (iconType: SalonIconType) => {
+    switch (iconType) {
+      case 'sparkles':
+        return <Sparkles size={20} />;
+      case 'crown':
+        return <Crown size={20} />;
+      case 'gem':
+        return <Gem size={20} />;
+      case 'heart':
+        return <Heart size={20} />;
+      case 'brush':
+        return <Paintbrush size={20} />;
+      case 'star':
+        return <Star size={20} />;
+      case 'flower':
+      default:
+        return <Flower2 size={20} className="animate-spin-slow" />;
+    }
+  };
+
+  const getThemeGradient = (theme: string) => {
+    switch (theme) {
+      case 'purple':
+        return 'from-purple-600 to-pink-500 shadow-purple-200';
+      case 'emerald':
+        return 'from-emerald-600 to-teal-400 shadow-emerald-200';
+      case 'amber':
+        return 'from-amber-500 to-yellow-400 shadow-amber-200';
+      case 'blue':
+        return 'from-sky-600 to-indigo-500 shadow-sky-200';
+      case 'slate':
+        return 'from-slate-900 to-slate-700 shadow-slate-200';
+      case 'blush':
+      default:
+        return 'from-blush-600 to-rose-400 shadow-blush-200';
+    }
+  };
+
   return (
     <aside className="w-64 bg-white border-r border-slate-200/80 flex flex-col h-screen sticky top-0 select-none">
       {/* Brand Logo */}
-      <div className="p-5 border-b border-slate-100 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blush-600 to-rose-400 flex items-center justify-center text-white shadow-md shadow-blush-200">
-          <Flower2 size={22} className="animate-spin-slow" />
+      <div className="p-4 border-b border-slate-100 flex items-center gap-3">
+        <div
+          className={`w-10 h-10 rounded-2xl bg-gradient-to-tr ${getThemeGradient(
+            settings.colorTheme
+          )} flex items-center justify-center text-white shadow-md overflow-hidden flex-shrink-0`}
+        >
+          {settings.customLogoUrl ? (
+            <img
+              src={settings.customLogoUrl}
+              alt="Logo"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            getSalonIcon(settings.icon)
+          )}
         </div>
-        <div>
-          <h1 className="font-extrabold text-base tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-            NailArt Studio
+        <div className="truncate">
+          <h1 className="font-extrabold text-base tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent truncate">
+            {settings.name}
           </h1>
-          <p className="text-[11px] font-medium text-blush-600 tracking-wider uppercase">
-            Salon & POS System
+          <p className="text-[11px] font-medium text-blush-600 tracking-wider uppercase truncate">
+            {settings.tagline}
           </p>
         </div>
       </div>

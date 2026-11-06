@@ -10,6 +10,7 @@ import { CustomerView } from './features/customers/CustomerView';
 import { InventoryView } from './features/inventory/InventoryView';
 import { StaffView } from './features/staff/StaffView';
 import { ReportsView } from './features/reports/ReportsView';
+import { SettingsView } from './features/settings/SettingsView';
 
 export function App() {
   const { isAuthenticated, loadStoredAuth, user } = useAuthStore();
@@ -39,6 +40,8 @@ export function App() {
         return { title: 'Manajemen Artis & Bagi Hasil Komisi', subtitle: 'Pengaturan persentase komisi, shift kerja, dan rekap payout artis' };
       case 'reports':
         return { title: 'Laporan Finansial & Omzet', subtitle: 'Analisis omzet harian/bulanan, performa layanan terlaris, dan laba kotor' };
+      case 'settings':
+        return { title: 'Pengaturan Salon & Studio', subtitle: 'Kustomisasi nama studio, logo/ikon, cabang, dan identitas struk' };
       default:
         return { title: 'NailArt Studio POS', subtitle: 'Sistem Kasir & Salon' };
     }
@@ -60,6 +63,7 @@ export function App() {
       {currentTab === 'inventory' && <InventoryView />}
       {currentTab === 'staff' && <StaffView />}
       {currentTab === 'reports' && <ReportsView />}
+      {currentTab === 'settings' && <SettingsView />}
     </AppLayout>
   );
 }

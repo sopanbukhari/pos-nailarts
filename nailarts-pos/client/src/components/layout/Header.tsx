@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Store, Bell, Sparkles } from 'lucide-react';
+import { useSalonStore } from '../../store/salonStore';
 
 interface HeaderProps {
   title: string;
@@ -8,6 +9,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
+  const { settings } = useSalonStore();
   const [time, setTime] = useState<string>('');
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
         <div className="hidden md:flex items-center gap-3 px-3 py-1.5 bg-slate-50 border border-slate-200/70 rounded-xl text-xs text-slate-600">
           <div className="flex items-center gap-1.5 font-medium">
             <Store size={14} className="text-blush-600" />
-            <span>Cabang Utama - Senopati</span>
+            <span>{settings.branchName}</span>
           </div>
           <span className="w-1 h-1 rounded-full bg-slate-300"></span>
           <div className="flex items-center gap-1.5 text-slate-500">
