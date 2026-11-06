@@ -2,7 +2,42 @@ import fs from 'fs';
 import path from 'path';
 
 // Path to persistent database storage file in prisma/
-const DB_FILE = path.resolve(__dirname, '../../../prisma/dev_data.json');
+function getDbFile(): string {
+  // If running in Vercel or Serverless Lambda environment
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const tmpFile = path.resolve('/tmp', 'dev_data.json');
+    if (!fs.existsSync(tmpFile)) {
+      const candidates = [
+        path.resolve(process.cwd(), 'prisma/dev_data.json'),
+        path.resolve(process.cwd(), 'nailarts-pos/prisma/dev_data.json'),
+        path.resolve(__dirname, '../../../prisma/dev_data.json'),
+        path.resolve(__dirname, '../../prisma/dev_data.json'),
+      ];
+      for (const p of candidates) {
+        if (fs.existsSync(p)) {
+          try {
+            fs.copyFileSync(p, tmpFile);
+            break;
+          } catch (e) {
+            console.error('Failed to copy initial DB to /tmp:', e);
+          }
+        }
+      }
+    }
+    return tmpFile;
+  }
+
+  // Local / standard server environment
+  const candidates = [
+    path.resolve(__dirname, '../../../prisma/dev_data.json'),
+    path.resolve(process.cwd(), 'prisma/dev_data.json'),
+    path.resolve(process.cwd(), 'nailarts-pos/prisma/dev_data.json'),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  return candidates[0];
+}
 
 interface DbSchema {
   users: any[];
@@ -18,9 +53,10 @@ interface DbSchema {
 }
 
 function loadDb(): DbSchema {
+  const dbFile = getDbFile();
   try {
-    if (fs.existsSync(DB_FILE)) {
-      const content = fs.readFileSync(DB_FILE, 'utf-8');
+    if (fs.existsSync(dbFile)) {
+      const content = fs.readFileSync(dbFile, 'utf-8');
       return JSON.parse(content);
     }
   } catch (err) {
@@ -42,11 +78,12 @@ function loadDb(): DbSchema {
 
 function saveDb(data: DbSchema): void {
   try {
-    const dir = path.dirname(DB_FILE);
+    const dbFile = getDbFile();
+    const dir = path.dirname(dbFile);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    fs.writeFileSync(dbFile, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err) {
     console.error('Error saving db file:', err);
   }
