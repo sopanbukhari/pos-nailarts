@@ -119,4 +119,190 @@ export class ReportService {
 
     return days;
   }
+
+  /**
+   * Mengambil laporan omzet terperinci berdasarkan periode: daily, weekly, monthly, yearly
+   */
+  static async getRevenueReport(period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily') {
+    const allTransactions = await prisma.transaction.findMany({
+      where: { status: 'COMPLETED' },
+    });
+
+    const now = new Date();
+    const rows: Array<{
+      periodKey: string;
+      label: string;
+      startDate: string;
+      endDate: string;
+      txCount: number;
+      subtotal: number;
+      discount: number;
+      tax: number;
+      revenue: number;
+      commission: number;
+      netRevenue: number;
+    }> = [];
+
+    if (period === 'daily') {
+      // 14 hari terakhir
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+        const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+        const txs = allTransactions.filter((t) => {
+          const tTime = new Date(t.createdAt).getTime();
+          return tTime >= start.getTime() && tTime <= end.getTime();
+        });
+
+        const revenue = txs.reduce((sum, t) => sum + (t.total || 0), 0);
+        const subtotal = txs.reduce((sum, t) => sum + (t.subtotal || t.total || 0), 0);
+        const discount = txs.reduce((sum, t) => sum + (t.discount || 0), 0);
+        const tax = txs.reduce((sum, t) => sum + (t.tax || 0), 0);
+        const commission = txs.reduce((sum, t) => sum + (t.commissionAmount || 0), 0);
+
+        rows.push({
+          periodKey: start.toISOString().slice(0, 10),
+          label: start.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }),
+          startDate: start.toISOString().slice(0, 10),
+          endDate: end.toISOString().slice(0, 10),
+          txCount: txs.length,
+          subtotal,
+          discount,
+          tax,
+          revenue,
+          commission,
+          netRevenue: revenue - commission,
+        });
+      }
+    } else if (period === 'weekly') {
+      // 8 minggu terakhir
+      for (let i = 7; i >= 0; i--) {
+        const end = new Date(now);
+        end.setDate(end.getDate() - i * 7);
+        end.setHours(23, 59, 59, 999);
+
+        const start = new Date(end);
+        start.setDate(start.getDate() - 6);
+        start.setHours(0, 0, 0, 0);
+
+        const txs = allTransactions.filter((t) => {
+          const tTime = new Date(t.createdAt).getTime();
+          return tTime >= start.getTime() && tTime <= end.getTime();
+        });
+
+        const revenue = txs.reduce((sum, t) => sum + (t.total || 0), 0);
+        const subtotal = txs.reduce((sum, t) => sum + (t.subtotal || t.total || 0), 0);
+        const discount = txs.reduce((sum, t) => sum + (t.discount || 0), 0);
+        const tax = txs.reduce((sum, t) => sum + (t.tax || 0), 0);
+        const commission = txs.reduce((sum, t) => sum + (t.commissionAmount || 0), 0);
+
+        const startLabel = start.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        const endLabel = end.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+
+        rows.push({
+          periodKey: `W-${start.toISOString().slice(0, 10)}`,
+          label: `${startLabel} - ${endLabel}`,
+          startDate: start.toISOString().slice(0, 10),
+          endDate: end.toISOString().slice(0, 10),
+          txCount: txs.length,
+          subtotal,
+          discount,
+          tax,
+          revenue,
+          commission,
+          netRevenue: revenue - commission,
+        });
+      }
+    } else if (period === 'monthly') {
+      // 12 bulan di tahun berjalan
+      const currentYear = now.getFullYear();
+      for (let m = 0; m <= 11; m++) {
+        const start = new Date(currentYear, m, 1, 0, 0, 0, 0);
+        const end = new Date(currentYear, m + 1, 0, 23, 59, 59, 999);
+
+        const txs = allTransactions.filter((t) => {
+          const tTime = new Date(t.createdAt).getTime();
+          return tTime >= start.getTime() && tTime <= end.getTime();
+        });
+
+        const revenue = txs.reduce((sum, t) => sum + (t.total || 0), 0);
+        const subtotal = txs.reduce((sum, t) => sum + (t.subtotal || t.total || 0), 0);
+        const discount = txs.reduce((sum, t) => sum + (t.discount || 0), 0);
+        const tax = txs.reduce((sum, t) => sum + (t.tax || 0), 0);
+        const commission = txs.reduce((sum, t) => sum + (t.commissionAmount || 0), 0);
+
+        rows.push({
+          periodKey: `${currentYear}-${String(m + 1).padStart(2, '0')}`,
+          label: start.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
+          startDate: start.toISOString().slice(0, 10),
+          endDate: end.toISOString().slice(0, 10),
+          txCount: txs.length,
+          subtotal,
+          discount,
+          tax,
+          revenue,
+          commission,
+          netRevenue: revenue - commission,
+        });
+      }
+    } else if (period === 'yearly') {
+      // 5 tahun terakhir
+      const currentYear = now.getFullYear();
+      for (let y = currentYear - 4; y <= currentYear; y++) {
+        const start = new Date(y, 0, 1, 0, 0, 0, 0);
+        const end = new Date(y, 11, 31, 23, 59, 59, 999);
+
+        const txs = allTransactions.filter((t) => {
+          const tTime = new Date(t.createdAt).getTime();
+          return tTime >= start.getTime() && tTime <= end.getTime();
+        });
+
+        const revenue = txs.reduce((sum, t) => sum + (t.total || 0), 0);
+        const subtotal = txs.reduce((sum, t) => sum + (t.subtotal || t.total || 0), 0);
+        const discount = txs.reduce((sum, t) => sum + (t.discount || 0), 0);
+        const tax = txs.reduce((sum, t) => sum + (t.tax || 0), 0);
+        const commission = txs.reduce((sum, t) => sum + (t.commissionAmount || 0), 0);
+
+        rows.push({
+          periodKey: `${y}`,
+          label: `Tahun ${y}`,
+          startDate: start.toISOString().slice(0, 10),
+          endDate: end.toISOString().slice(0, 10),
+          txCount: txs.length,
+          subtotal,
+          discount,
+          tax,
+          revenue,
+          commission,
+          netRevenue: revenue - commission,
+        });
+      }
+    }
+
+    const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0);
+    const totalTransactions = rows.reduce((s, r) => s + r.txCount, 0);
+    const totalSubtotal = rows.reduce((s, r) => s + r.subtotal, 0);
+    const totalDiscount = rows.reduce((s, r) => s + r.discount, 0);
+    const totalTax = rows.reduce((s, r) => s + r.tax, 0);
+    const totalCommission = rows.reduce((s, r) => s + r.commission, 0);
+    const netRevenue = totalRevenue - totalCommission;
+    const averagePerTx = totalTransactions > 0 ? Math.round(totalRevenue / totalTransactions) : 0;
+
+    return {
+      period,
+      summary: {
+        totalRevenue,
+        totalTransactions,
+        averagePerTx,
+        totalSubtotal,
+        totalDiscount,
+        totalTax,
+        totalCommission,
+        netRevenue,
+      },
+      rows,
+    };
+  }
 }

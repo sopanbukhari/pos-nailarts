@@ -29,4 +29,14 @@ export class ReportController {
       res.status(500).json({ success: false, message: error.message });
     }
   }
+
+  static async getRevenueReport(req: Request, res: Response): Promise<void> {
+    try {
+      const period = (req.query.period as any) || 'daily';
+      const report = await ReportService.getRevenueReport(period);
+      res.json({ success: true, data: report });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
 }

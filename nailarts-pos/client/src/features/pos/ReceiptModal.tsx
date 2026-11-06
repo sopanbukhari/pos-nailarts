@@ -1,9 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Printer, CheckCircle, MessageCircle, Send, Copy, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Printer,
+  CheckCircle,
+  MessageCircle,
+  Send,
+  Download,
+  Copy,
+  Check,
+  Image as ImageIcon,
+  Loader2,
+} from 'lucide-react';
+import html2canvas from 'html2canvas';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { Transaction } from '../../types';
-import { formatDate, formatRupiah, formatWhatsAppNumber, generateReceiptWhatsAppText } from '../../utils/format';
+import { formatDate, formatRupiah, formatWhatsAppNumber } from '../../utils/format';
 
 interface ReceiptModalProps {
   isOpen: boolean;
@@ -16,8 +27,10 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   onClose,
   transaction,
 }) => {
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [phone, setPhone] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [imageCopied, setImageCopied] = useState(false);
 
   useEffect(() => {
     if (transaction?.customer?.phone) {
@@ -25,7 +38,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     } else {
       setPhone('');
     }
-    setCopied(false);
+    setImageCopied(false);
   }, [transaction]);
 
   if (!transaction) return null;
@@ -34,25 +47,132 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     window.print();
   };
 
-  const handleSendWhatsApp = () => {
-    const targetPhone = formatWhatsAppNumber(phone);
-    if (!targetPhone) {
-      alert('Mohon masukkan nomor WhatsApp pelanggan terlebih dahulu.');
-      return;
-    }
-    const text = generateReceiptWhatsAppText(transaction);
-    const url = `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+  /**
+   * Helper untuk mengonversi elemen struk thermal ke Canvas PNG resolusi tinggi
+   */
+  const captureReceiptCanvas = async (): Promise<HTMLCanvasElement | null> => {
+    if (!receiptRef.current) return null;
+    return await html2canvas(receiptRef.current, {
+      scale: 3, // Skala tinggi agar teks sangat tajam & jelas dibaca di HP
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      logging: false,
+    });
   };
 
-  const handleCopyText = async () => {
-    const text = generateReceiptWhatsAppText(transaction);
+  /**
+   * Unduh struk sebagai file gambar PNG
+   */
+  const handleDownloadImage = async () => {
+    setIsGenerating(true);
     try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      const canvas = await captureReceiptCanvas();
+      if (!canvas) return;
+
+      const link = document.createElement('a');
+      link.download = `Struk-${transaction.invoiceNumber}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
     } catch (err) {
-      console.error('Gagal menyalin teks struk:', err);
+      console.error('Gagal mengunduh gambar struk:', err);
+      alert('Terjadi kesalahan saat mengunduh gambar struk.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  /**
+   * Salin gambar struk langsung ke Clipboard (bisa langsung Ctrl+V di WhatsApp Web)
+   */
+  const handleCopyImage = async () => {
+    setIsGenerating(true);
+    try {
+      const canvas = await captureReceiptCanvas();
+      if (!canvas) return;
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob }),
+          ]);
+          setImageCopied(true);
+          setTimeout(() => setImageCopied(false), 3000);
+        } catch (clipErr) {
+          console.error('Clipboard write image failed:', clipErr);
+          // Fallback download if clipboard image copy not permitted
+          handleDownloadImage();
+        }
+      }, 'image/png');
+    } catch (err) {
+      console.error('Gagal menyalin gambar:', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  /**
+   * Kirim gambar struk via WhatsApp
+   * Mendukung Web Share API (mobile/tablet) atau otomatis salin gambar + download + buka chat WA (desktop)
+   */
+  const handleSendWhatsAppImage = async () => {
+    const targetPhone = formatWhatsAppNumber(phone);
+    if (!targetPhone) {
+      alert('Silakan masukkan nomor WhatsApp pelanggan terlebih dahulu.');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const canvas = await captureReceiptCanvas();
+      if (!canvas) return;
+
+      const defaultCaption = `Halo Kak ${transaction.customer?.name || ''}, ini struk pembayaran resmi dari NailArt Studio Salon (No. Invoice: ${transaction.invoiceNumber}). Terima kasih telah mempercantik kuku Anda bersama kami! 💅✨`;
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], `Struk-${transaction.invoiceNumber}.png`, { type: 'image/png' });
+
+        // Cek jika browser mendukung kirim file langsung via Web Share API
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: `Struk ${transaction.invoiceNumber}`,
+              text: defaultCaption,
+            });
+            return;
+          } catch (shareErr) {
+            console.log('Share dialog closed', shareErr);
+          }
+        }
+
+        // Desktop Fallback:
+        // 1. Salin gambar ke clipboard agar kasir bisa langsung tekan Ctrl+V di chat WhatsApp
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob }),
+          ]);
+          setImageCopied(true);
+          setTimeout(() => setImageCopied(false), 4000);
+        } catch (clipErr) {
+          console.log('Clipboard image not supported, downloading file');
+        }
+
+        // 2. Unduh otomatis file gambar
+        const link = document.createElement('a');
+        link.download = `Struk-${transaction.invoiceNumber}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+
+        // 3. Buka WhatsApp chat dengan nomor pelanggan
+        const waUrl = `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodeURIComponent(defaultCaption)}`;
+        window.open(waUrl, '_blank');
+      }, 'image/png');
+    } catch (err) {
+      console.error('Gagal memproses struk gambar:', err);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -61,7 +181,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Transaksi Berhasil!"
-      subtitle="Struk pembayaran siap dicetak atau dikirim via WhatsApp"
+      subtitle="Struk pembayaran siap dicetak atau dibagikan sebagai gambar"
       maxWidth="md"
     >
       <div className="space-y-4">
@@ -71,20 +191,21 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           <span>Pembayaran sukses diverifikasi & komisi telah dicatat!</span>
         </div>
 
-        {/* WhatsApp Digital Receipt Card */}
-        <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/90 rounded-xl space-y-2.5">
+        {/* WhatsApp & Gambar Digital Receipt Card */}
+        <div className="p-4 bg-emerald-50/70 border border-emerald-200/90 rounded-2xl space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-emerald-950 font-bold text-xs">
               <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-                <MessageCircle size={14} />
+                <ImageIcon size={14} />
               </div>
-              <span>Kirim Struk Digital via WhatsApp</span>
+              <span>Kirim Struk Digital Berupa Gambar ke WhatsApp</span>
             </div>
-            <span className="text-[10px] bg-emerald-100/90 text-emerald-800 font-semibold px-2 py-0.5 rounded-full">
-              Format (+62)
+            <span className="text-[10px] bg-emerald-100/90 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+              Format Gambar PNG
             </span>
           </div>
 
+          {/* Input Nomor Telepon */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <input
@@ -92,46 +213,68 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="No. WhatsApp (contoh: 081234567890)"
-                className="w-full text-xs py-2 px-3 pl-8 bg-white border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-slate-800 placeholder:text-slate-400 shadow-2xs"
+                className="w-full text-xs py-2.5 px-3 pl-8 bg-white border border-emerald-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-slate-800 placeholder:text-slate-400 shadow-2xs"
               />
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">📱</span>
             </div>
+
+            {/* Tombol Kirim Gambar ke WhatsApp */}
             <button
               type="button"
-              onClick={handleSendWhatsApp}
-              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs active:scale-95"
+              disabled={isGenerating}
+              onClick={handleSendWhatsAppImage}
+              className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs active:scale-95"
             >
-              <Send size={13} />
-              <span>Kirim WA</span>
+              {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+              <span>Kirim Gambar WA</span>
             </button>
+          </div>
+
+          {/* Opsi Tambahan Gambar: Unduh & Salin Gambar */}
+          <div className="flex items-center gap-2 pt-1 border-t border-emerald-200/60">
             <button
               type="button"
-              onClick={handleCopyText}
-              title="Salin teks struk ke clipboard"
-              className="px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors shadow-2xs"
+              disabled={isGenerating}
+              onClick={handleDownloadImage}
+              className="flex-1 py-1.5 px-2.5 bg-white hover:bg-slate-50 border border-emerald-300/80 text-emerald-800 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
             >
-              {copied ? (
+              <Download size={13} className="text-emerald-600" />
+              <span>Unduh Gambar (.PNG)</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isGenerating}
+              onClick={handleCopyImage}
+              className="flex-1 py-1.5 px-2.5 bg-white hover:bg-slate-50 border border-emerald-300/80 text-emerald-800 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+            >
+              {imageCopied ? (
                 <>
                   <Check size={13} className="text-emerald-600" />
-                  <span className="text-emerald-700 font-semibold text-[11px]">Tersalin!</span>
+                  <span className="text-emerald-700">Gambar Tersalin!</span>
                 </>
               ) : (
                 <>
                   <Copy size={13} className="text-slate-500" />
-                  <span className="text-[11px]">Salin</span>
+                  <span>Salin Gambar (Ctrl+V)</span>
                 </>
               )}
             </button>
           </div>
-          <p className="text-[10px] text-emerald-700">
-            Pesan struk rapi berformat otomatis akan terbuka langsung di aplikasi WhatsApp Anda.
-          </p>
+
+          {imageCopied && (
+            <p className="text-[11px] text-emerald-800 font-medium bg-emerald-100/70 p-2 rounded-lg border border-emerald-200 flex items-center gap-1.5">
+              <Check size={14} className="text-emerald-600 flex-shrink-0" />
+              <span>Gambar struk telah disalin ke clipboard! Tekan <b>Ctrl + V</b> di chat WhatsApp Web untuk mengirim.</span>
+            </p>
+          )}
         </div>
 
-        {/* Thermal Receipt Paper Layout */}
+        {/* Thermal Receipt Paper Layout (Element ini yang dikonversi ke gambar PNG) */}
         <div
+          ref={receiptRef}
           id="thermal-receipt"
-          className="bg-white p-5 rounded-xl border border-dashed border-slate-300 font-mono text-xs text-slate-800 space-y-3 shadow-inner"
+          className="bg-white p-6 rounded-xl border border-dashed border-slate-300 font-mono text-xs text-slate-800 space-y-3.5 shadow-inner"
         >
           {/* Header Salon */}
           <div className="text-center border-b border-dashed border-slate-300 pb-3">
