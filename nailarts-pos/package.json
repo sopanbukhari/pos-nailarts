@@ -1,0 +1,28 @@
+{
+  "name": "nailarts-pos-workspace",
+  "version": "1.0.0",
+  "description": "Sistem Point of Sale (POS) & Manajemen Salon Kuku (Nail Art Salon POS)",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"magenta,cyan\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client",
+    "seed": "npm run seed --prefix server",
+    "build": "npm run build --prefix server && npm run build --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "keywords": [
+    "pos",
+    "nail-art",
+    "salon-management",
+    "express",
+    "react",
+    "prisma",
+    "typescript"
+  ],
+  "author": "NailArt POS Team",
+  "license": "MIT"
+}

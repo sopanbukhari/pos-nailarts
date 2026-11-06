@@ -1,0 +1,444 @@
+{
+  "users": [
+    {
+      "id": "usr-1793951850795-dgm8",
+      "commissionRate": 0,
+      "isActive": true,
+      "createdAt": "2026-11-06T07:57:30.795Z",
+      "updatedAt": "2026-11-06T07:57:30.796Z",
+      "name": "Owner / Salon Manager",
+      "email": "admin@nailart.com",
+      "password": "$2b$10$uVyChBpb0Es/ndOUNsIi3umb/c7AIjRfErC8UyfyNFGJIHJl2Uvn.",
+      "role": "ADMIN",
+      "phone": "081234567890"
+    },
+    {
+      "id": "usr-1793951850798-dl96",
+      "commissionRate": 0,
+      "isActive": true,
+      "createdAt": "2026-11-06T07:57:30.798Z",
+      "updatedAt": "2026-11-06T07:57:30.798Z",
+      "name": "Bella (Kasir)",
+      "email": "kasir@nailart.com",
+      "password": "$2b$10$Z0rhOrVE/Ny7Yc5vJVVIIOewxIiGlFXwMazrEu3GO8HEZBRKAh1PO",
+      "role": "CASHIER",
+      "phone": "081234567891"
+    },
+    {
+      "id": "usr-1793951850799-6a7e",
+      "commissionRate": 0.25,
+      "isActive": true,
+      "createdAt": "2026-11-06T07:57:30.799Z",
+      "updatedAt": "2026-11-06T07:57:30.799Z",
+      "name": "Sarah - Senior Nail Artist",
+      "email": "sarah@nailart.com",
+      "password": "$2b$10$zzERFpIGFQTC5ya20WL6kO8tYuvMxMAGALxewewyzHow93cMj3Jv.",
+      "role": "ARTIST",
+      "phone": "081234567892"
+    },
+    {
+      "id": "usr-1793951850800-i4bp",
+      "commissionRate": 0.2,
+      "isActive": true,
+      "createdAt": "2026-11-06T07:57:30.800Z",
+      "updatedAt": "2026-11-06T07:57:30.800Z",
+      "name": "Chloe - Nail Art Specialist",
+      "email": "chloe@nailart.com",
+      "password": "$2b$10$zzERFpIGFQTC5ya20WL6kO8tYuvMxMAGALxewewyzHow93cMj3Jv.",
+      "role": "ARTIST",
+      "phone": "081234567893"
+    }
+  ],
+  "customers": [
+    {
+      "id": "cust-1793951850834-978n",
+      "loyaltyPoints": 120,
+      "createdAt": "2026-11-06T07:57:30.834Z",
+      "updatedAt": "2026-11-06T07:57:30.834Z",
+      "name": "Jessica Tanuwijaya",
+      "phone": "081899112233",
+      "email": "jessica@gmail.com",
+      "nailShapePreference": "Medium Almond",
+      "colorPreferences": "Nude pink, Chrome glazed, French tip",
+      "allergies": "Sensitif terhadap bau aseton tajam",
+      "notes": "Pelanggan VIP mingguan, suka teh hangat saat perawatan"
+    },
+    {
+      "id": "cust-1793951850837-ox47",
+      "loyaltyPoints": 75,
+      "createdAt": "2026-11-06T07:57:30.837Z",
+      "updatedAt": "2026-11-06T07:57:30.837Z",
+      "name": "Nadya Putri",
+      "phone": "081288334455",
+      "email": "nadya.p@yahoo.com",
+      "nailShapePreference": "Long Coffin",
+      "colorPreferences": "Burgundy, Cat-Eye Dark Velvet, Gothic Glam",
+      "allergies": "Tidak ada riwayat alergi",
+      "notes": "Suka artist Sarah untuk sambung polygel"
+    },
+    {
+      "id": "cust-1793951850841-a5ex",
+      "loyaltyPoints": 40,
+      "createdAt": "2026-11-06T07:57:30.841Z",
+      "updatedAt": "2026-11-06T07:57:30.841Z",
+      "name": "Clara Michelle",
+      "phone": "085711223344",
+      "email": "clara.m@gmail.com",
+      "nailShapePreference": "Short Square",
+      "colorPreferences": "Pastel lilac, Baby blue, Clean girl aesthetic",
+      "allergies": "Kutikula mudah berdarah jika terlalu ditekan"
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat-1793951850802-36y7",
+      "createdAt": "2026-11-06T07:57:30.802Z",
+      "updatedAt": "2026-11-06T07:57:30.802Z",
+      "name": "Manicure & Pedicure",
+      "description": "Perawatan kuku dasar dan higienis",
+      "icon": "Sparkles"
+    },
+    {
+      "id": "cat-1793951850804-ayw6",
+      "createdAt": "2026-11-06T07:57:30.804Z",
+      "updatedAt": "2026-11-06T07:57:30.804Z",
+      "name": "Gel Polish & Coating",
+      "description": "Pewarnaan kuteks gel UV tahan lama",
+      "icon": "Palette"
+    },
+    {
+      "id": "cat-1793951850805-hkdj",
+      "createdAt": "2026-11-06T07:57:30.805Z",
+      "updatedAt": "2026-11-06T07:57:30.805Z",
+      "name": "Nail Extension",
+      "description": "Sambung kuku Polygel, Acrylic & Soft Gel Tips",
+      "icon": "Scissors"
+    },
+    {
+      "id": "cat-1793951850807-1bt7",
+      "createdAt": "2026-11-06T07:57:30.807Z",
+      "updatedAt": "2026-11-06T07:57:30.807Z",
+      "name": "Nail Art Design",
+      "description": "Desain kustom, 3D charm, glitter, chrome & ombre",
+      "icon": "Wand2"
+    },
+    {
+      "id": "cat-1793951850809-ym49",
+      "createdAt": "2026-11-06T07:57:30.809Z",
+      "updatedAt": "2026-11-06T07:57:30.809Z",
+      "name": "Removal & Treatment",
+      "description": "Pembersihan gel lama & vitamin keratin kuku",
+      "icon": "ShieldCheck"
+    }
+  ],
+  "services": [
+    {
+      "id": "srv-1793951850813-dots",
+      "isActive": true,
+      "durationMinutes": 45,
+      "createdAt": "2026-11-06T07:57:30.813Z",
+      "updatedAt": "2026-11-06T07:57:30.813Z",
+      "name": "Russian E-File Dry Manicure",
+      "categoryId": "cat-1793951850802-36y7",
+      "basePrice": 120000,
+      "description": "Pembersihan kutikula mendalam dengan e-file mata bor diamond steril."
+    },
+    {
+      "id": "srv-1793951850816-vyfm",
+      "isActive": true,
+      "durationMinutes": 60,
+      "createdAt": "2026-11-06T07:57:30.816Z",
+      "updatedAt": "2026-11-06T07:57:30.816Z",
+      "name": "Gel Polish Korea/Jepang Full Color",
+      "categoryId": "cat-1793951850804-ayw6",
+      "basePrice": 160000,
+      "description": "Kuteks gel premium non-toxic tahan hingga 4-5 minggu tanpa chipping."
+    },
+    {
+      "id": "srv-1793951850819-77ag",
+      "isActive": true,
+      "durationMinutes": 90,
+      "createdAt": "2026-11-06T07:57:30.819Z",
+      "updatedAt": "2026-11-06T07:57:30.819Z",
+      "name": "Full Set Polygel Extension + Shape",
+      "categoryId": "cat-1793951850805-hkdj",
+      "basePrice": 320000,
+      "description": "Sambung kuku ringan dan kokoh bentuk Almond, Coffin, atau Square."
+    },
+    {
+      "id": "srv-1793951850825-5uq1",
+      "isActive": true,
+      "durationMinutes": 75,
+      "createdAt": "2026-11-06T07:57:30.825Z",
+      "updatedAt": "2026-11-06T07:57:30.825Z",
+      "name": "3D Luxury Nail Art & Crystal Charms",
+      "categoryId": "cat-1793951850807-1bt7",
+      "basePrice": 240000,
+      "description": "Kreasi seni kuku berhiaskan permata Swarovski, pita 3D, dan mutiara."
+    },
+    {
+      "id": "srv-1793951850828-b18i",
+      "isActive": true,
+      "durationMinutes": 30,
+      "createdAt": "2026-11-06T07:57:30.828Z",
+      "updatedAt": "2026-11-06T07:57:30.828Z",
+      "name": "Safe Soak-Off Gel / Extension Removal",
+      "categoryId": "cat-1793951850809-ym49",
+      "basePrice": 60000,
+      "description": "Pelepasan kuteks gel/extension dengan aman tanpa merusak lapisan kuku."
+    }
+  ],
+  "serviceAddons": [
+    {
+      "id": "addon-1793951850813-isvq",
+      "serviceId": "srv-1793951850813-dots",
+      "extraMinutes": 15,
+      "name": "Scrub & Masker Tangan Organik",
+      "price": 35000
+    },
+    {
+      "id": "addon-1793951850813-rd44",
+      "serviceId": "srv-1793951850813-dots",
+      "extraMinutes": 20,
+      "name": "Paraffin Wax Hydration",
+      "price": 50000
+    },
+    {
+      "id": "addon-1793951850816-xgss",
+      "serviceId": "srv-1793951850816-vyfm",
+      "extraMinutes": 15,
+      "name": "Chrome Powder Finish (Glazed Donut Effect)",
+      "price": 40000
+    },
+    {
+      "id": "addon-1793951850816-m262",
+      "serviceId": "srv-1793951850816-vyfm",
+      "extraMinutes": 15,
+      "name": "Cat-Eye 9D Magnet Reflection",
+      "price": 45000
+    },
+    {
+      "id": "addon-1793951850816-gpyh",
+      "serviceId": "srv-1793951850816-vyfm",
+      "extraMinutes": 10,
+      "name": "Matte Top Coat Velvet Finish",
+      "price": 20000
+    },
+    {
+      "id": "addon-1793951850819-4a7t",
+      "serviceId": "srv-1793951850819-77ag",
+      "extraMinutes": 20,
+      "name": "Ekstra Panjang (Length XL)",
+      "price": 50000
+    },
+    {
+      "id": "addon-1793951850819-qak1",
+      "serviceId": "srv-1793951850819-77ag",
+      "extraMinutes": 10,
+      "name": "Overlay Penguat Kuku Alami",
+      "price": 30000
+    },
+    {
+      "id": "addon-1793951850825-x5oq",
+      "serviceId": "srv-1793951850825-5uq1",
+      "extraMinutes": 15,
+      "name": "Swarovski Crystal Cluster (per 2 jari)",
+      "price": 50000
+    },
+    {
+      "id": "addon-1793951850825-1m25",
+      "serviceId": "srv-1793951850825-5uq1",
+      "extraMinutes": 20,
+      "name": "Hand-painted French Tip / Floral Art",
+      "price": 60000
+    },
+    {
+      "id": "addon-1793951850829-6q6s",
+      "serviceId": "srv-1793951850828-b18i",
+      "extraMinutes": 10,
+      "name": "Keratin Vitamin Nail Booster",
+      "price": 25000
+    }
+  ],
+  "inventoryItems": [
+    {
+      "id": "inv-1793951850846-s400",
+      "createdAt": "2026-11-06T07:57:30.846Z",
+      "updatedAt": "2026-11-06T07:57:30.846Z",
+      "sku": "INV-POL-001",
+      "name": "Kokoist Gel Polish - Rose Nude #04",
+      "category": "Gel Polish",
+      "stockQuantity": 14,
+      "unit": "botol",
+      "minStockAlert": 5,
+      "costPrice": 110000,
+      "supplier": "Kokoist ID"
+    },
+    {
+      "id": "inv-1793951850846-41rg",
+      "createdAt": "2026-11-06T07:57:30.846Z",
+      "updatedAt": "2026-11-06T07:57:30.846Z",
+      "sku": "INV-POL-002",
+      "name": "Cat-Eye Magnet Gel - Galaxy Silver",
+      "category": "Gel Polish",
+      "stockQuantity": 8,
+      "unit": "botol",
+      "minStockAlert": 4,
+      "costPrice": 95000,
+      "supplier": "NailSupply JK"
+    },
+    {
+      "id": "inv-1793951850846-w7z6",
+      "createdAt": "2026-11-06T07:57:30.846Z",
+      "updatedAt": "2026-11-06T07:57:30.846Z",
+      "sku": "INV-TOP-001",
+      "name": "Non-Wipe Glossy Gel Top Coat 15ml",
+      "category": "Coating",
+      "stockQuantity": 3,
+      "unit": "botol",
+      "minStockAlert": 5,
+      "costPrice": 85000,
+      "supplier": "Gelish Official"
+    },
+    {
+      "id": "inv-1793951850846-08ag",
+      "createdAt": "2026-11-06T07:57:30.846Z",
+      "updatedAt": "2026-11-06T07:57:30.846Z",
+      "sku": "INV-BASE-001",
+      "name": "Rubber Base Coat Flexible 15ml",
+      "category": "Coating",
+      "stockQuantity": 12,
+      "unit": "botol",
+      "minStockAlert": 5,
+      "costPrice": 90000,
+      "supplier": "Gelish Official"
+    },
+    {
+      "id": "inv-1793951850847-b43c",
+      "createdAt": "2026-11-06T07:57:30.847Z",
+      "updatedAt": "2026-11-06T07:57:30.847Z",
+      "sku": "INV-TIP-001",
+      "name": "Full Cover Soft Gel Tips Almond (500 pcs)",
+      "category": "Tips & Extension",
+      "stockQuantity": 2,
+      "unit": "box",
+      "minStockAlert": 3,
+      "costPrice": 150000,
+      "supplier": "Apres Nails"
+    },
+    {
+      "id": "inv-1793951850847-8ani",
+      "createdAt": "2026-11-06T07:57:30.847Z",
+      "updatedAt": "2026-11-06T07:57:30.847Z",
+      "sku": "INV-ACC-001",
+      "name": "Swarovski Crystal Mix Assorted (1440 pcs)",
+      "category": "Accessories",
+      "stockQuantity": 6,
+      "unit": "box",
+      "minStockAlert": 3,
+      "costPrice": 220000,
+      "supplier": "Sparkle Gem Store"
+    },
+    {
+      "id": "inv-1793951850847-uerj",
+      "createdAt": "2026-11-06T07:57:30.847Z",
+      "updatedAt": "2026-11-06T07:57:30.847Z",
+      "sku": "INV-SAN-001",
+      "name": "Pure Acetone Salon Grade 1000ml",
+      "category": "Sanitizing",
+      "stockQuantity": 9,
+      "unit": "botol",
+      "minStockAlert": 4,
+      "costPrice": 65000,
+      "supplier": "Kimia Farma"
+    },
+    {
+      "id": "inv-1793951850847-xz5e",
+      "createdAt": "2026-11-06T07:57:30.847Z",
+      "updatedAt": "2026-11-06T07:57:30.847Z",
+      "sku": "INV-TOOL-001",
+      "name": "Diamond Cuticle Drill Bit Set",
+      "category": "Tools",
+      "stockQuantity": 10,
+      "unit": "set",
+      "minStockAlert": 3,
+      "costPrice": 135000,
+      "supplier": "Staleks Pro"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "bk-1793951850850-zn8q",
+      "status": "CONFIRMED",
+      "createdAt": "2026-11-06T07:57:30.851Z",
+      "updatedAt": "2026-11-06T07:57:30.851Z",
+      "customerId": "cust-1793951850834-978n",
+      "artistId": "usr-1793951850799-6a7e",
+      "date": "2026-11-06",
+      "startTime": "13:00",
+      "endTime": "14:15",
+      "notes": "Ingin request chrome glazed donut kuku tangan kanan & kiri",
+      "totalPrice": 200000
+    },
+    {
+      "id": "bk-1793951850854-ycxt",
+      "status": "PENDING",
+      "createdAt": "2026-11-06T07:57:30.854Z",
+      "updatedAt": "2026-11-06T07:57:30.854Z",
+      "customerId": "cust-1793951850837-ox47",
+      "artistId": "usr-1793951850800-i4bp",
+      "date": "2026-11-06",
+      "startTime": "15:30",
+      "endTime": "17:00",
+      "notes": "Extension polygel warna maroon/burgundy",
+      "totalPrice": 320000
+    }
+  ],
+  "bookingItems": [
+    {
+      "id": "bkit-1793951850851-j93c",
+      "bookingId": "bk-1793951850850-zn8q",
+      "serviceId": "srv-1793951850816-vyfm",
+      "addonNamesJson": "[\"Chrome Powder Finish (Glazed Donut Effect)\"]",
+      "price": 200000
+    },
+    {
+      "id": "bkit-1793951850854-bx2s",
+      "bookingId": "bk-1793951850854-ycxt",
+      "serviceId": "srv-1793951850819-77ag",
+      "addonNamesJson": "[]",
+      "price": 320000
+    }
+  ],
+  "transactions": [
+    {
+      "id": "tx-1793951850857-bv54",
+      "discount": 15000,
+      "tax": 0,
+      "paymentMethod": "QRIS",
+      "commissionAmount": 38750,
+      "status": "COMPLETED",
+      "createdAt": "2026-11-06T07:57:30.857Z",
+      "invoiceNumber": "INV-261106-1001",
+      "customerId": "cust-1793951850841-a5ex",
+      "cashierId": "usr-1793951850798-dl96",
+      "artistId": "usr-1793951850799-6a7e",
+      "subtotal": 155000,
+      "total": 140000,
+      "paymentDetailsJson": "{\"qrisRef\":\"QRIS-BCA-987654321\"}"
+    }
+  ],
+  "transactionItems": [
+    {
+      "id": "txit-1793951850857-m7d9",
+      "transactionId": "tx-1793951850857-bv54",
+      "quantity": 1,
+      "artistCommission": 38750,
+      "serviceId": "srv-1793951850813-dots",
+      "serviceName": "Russian E-File Dry Manicure",
+      "basePrice": 120000,
+      "addonsJson": "[{\"name\":\"Scrub & Masker Tangan Organik\",\"price\":35000}]",
+      "totalPrice": 155000
+    }
+  ]
+}

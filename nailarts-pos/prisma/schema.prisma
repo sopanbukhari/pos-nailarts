@@ -1,0 +1,185 @@
+// Prisma schema for Nail Art POS & Salon Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CASHIER
+  ARTIST
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  QRIS
+  CARD
+  SPLIT
+}
+
+enum TransactionStatus {
+  COMPLETED
+  REFUNDED
+}
+
+model User {
+  id             String        @id @default(uuid())
+  name           String
+  email          String        @unique
+  password       String
+  role           String        @default("ARTIST") // ADMIN | CASHIER | ARTIST
+  phone          String?
+  commissionRate Float         @default(0.20) // 20% commission default for nail artists
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  bookings       Booking[]     @relation("ArtistBookings")
+  transactions   Transaction[] @relation("CashierTransactions")
+  artistServices Transaction[] @relation("ArtistTransactions")
+}
+
+model Customer {
+  id                   String        @id @default(uuid())
+  name                 String
+  phone                String        @unique
+  email                String?
+  notes                String?
+  nailShapePreference  String?       // Almond, Coffin, Stiletto, Square, Oval, Round
+  colorPreferences     String?       // e.g. "Nude, Rose Gold, Glossy finish"
+  allergies            String?       // e.g. "Alergi lem kuku tertentu, kuku sensitif"
+  loyaltyPoints        Int           @default(0)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  bookings             Booking[]
+  transactions         Transaction[]
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  icon        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  services    Service[]
+}
+
+model Service {
+  id              String         @id @default(uuid())
+  name            String
+  categoryId      String
+  category        Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  basePrice       Float
+  durationMinutes Int            @default(45)
+  description     String?
+  image           String?
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  addons          ServiceAddon[]
+  bookingItems    BookingItem[]
+}
+
+model ServiceAddon {
+  id           String   @id @default(uuid())
+  serviceId    String
+  service      Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  name         String
+  price        Float
+  extraMinutes Int      @default(15)
+  createdAt    DateTime @default(now())
+}
+
+model InventoryItem {
+  id            String   @id @default(uuid())
+  sku           String   @unique
+  name          String
+  category      String   // Polish / Gel / Tools / Accessories / Sanitizing
+  stockQuantity Int      @default(0)
+  unit          String   @default("pcs") // pcs, botol, set, box
+  minStockAlert Int      @default(5)
+  costPrice     Float    @default(0)
+  supplier      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Booking {
+  id          String        @id @default(uuid())
+  customerId  String
+  customer    Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  artistId    String
+  artist      User          @relation("ArtistBookings", fields: [artistId], references: [id], onDelete: Restrict)
+  date        String        // Format: YYYY-MM-DD
+  startTime   String        // Format: HH:mm
+  endTime     String        // Format: HH:mm
+  status      String        @default("PENDING") // PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
+  notes       String?
+  totalPrice  Float         @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  items       BookingItem[]
+}
+
+model BookingItem {
+  id             String   @id @default(uuid())
+  bookingId      String
+  booking        Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  serviceId      String
+  service        Service  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  addonNamesJson String?  // JSON stringified array of addon names
+  price          Float
+}
+
+model Transaction {
+  id                 String            @id @default(uuid())
+  invoiceNumber      String            @unique
+  customerId         String?
+  customer           Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  cashierId          String
+  cashier            User              @relation("CashierTransactions", fields: [cashierId], references: [id], onDelete: Restrict)
+  artistId           String?
+  artist             User?             @relation("ArtistTransactions", fields: [artistId], references: [id], onDelete: SetNull)
+  subtotal           Float
+  discount           Float             @default(0)
+  tax                Float             @default(0)
+  total              Float
+  paymentMethod      String            @default("CASH") // CASH, QRIS, CARD, SPLIT
+  paymentDetailsJson String?           // JSON data (e.g., split amounts, card ref, etc.)
+  commissionAmount   Float             @default(0)
+  status             String            @default("COMPLETED") // COMPLETED, REFUNDED
+  createdAt          DateTime          @default(now())
+
+  items              TransactionItem[]
+}
+
+model TransactionItem {
+  id               String      @id @default(uuid())
+  transactionId    String
+  transaction      Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  serviceId        String?
+  serviceName      String
+  basePrice        Float
+  addonsJson       String?     // Array of chosen addons { name, price }
+  quantity         Int         @default(1)
+  totalPrice       Float
+  artistCommission Float       @default(0)
+}
