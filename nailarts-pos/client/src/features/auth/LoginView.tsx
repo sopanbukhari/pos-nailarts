@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Flower2, Lock, Mail, Sparkles, UserCheck } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -10,6 +10,13 @@ export const LoginView: React.FC = () => {
   const [password, setPassword] = useState('admin123');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+
+  useEffect(() => {
+    api.get('/health')
+      .then(() => setApiStatus('connected'))
+      .catch(() => setApiStatus('error'));
+  }, []);
 
   const { setAuth } = useAuthStore();
 
@@ -107,6 +114,28 @@ export const LoginView: React.FC = () => {
               💅 Nail Artist
             </button>
           </div>
+        </div>
+
+        {/* API Connection Indicator */}
+        <div className="mt-6 flex items-center justify-center gap-1.5 text-[11px]">
+          {apiStatus === 'checking' && (
+            <span className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200/60 font-medium">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              Menghubungkan ke API...
+            </span>
+          )}
+          {apiStatus === 'connected' && (
+            <span className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200/60 font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              🟢 Backend API Terhubung
+            </span>
+          )}
+          {apiStatus === 'error' && (
+            <span className="flex items-center gap-1.5 text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200/60 font-medium">
+              <span className="w-2 h-2 rounded-full bg-rose-500" />
+              🔴 Backend API Belum Terhubung
+            </span>
+          )}
         </div>
       </div>
     </div>
