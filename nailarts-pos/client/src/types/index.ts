@@ -7,6 +7,7 @@ export interface User {
   role: RoleType;
   phone?: string;
   commissionRate?: number;
+  employeeId?: string;
 }
 
 export interface Customer {
@@ -39,6 +40,7 @@ export interface Service {
   durationMinutes: number;
   description?: string;
   image?: string;
+  commissionRate?: number;
   isActive: boolean;
   addons?: ServiceAddon[];
 }
@@ -51,9 +53,28 @@ export interface Category {
   services?: Service[];
 }
 
+export interface Product {
+  id: string;
+  sku: string;
+  name: string;
+  category: string;
+  description?: string;
+  retailPrice: number;
+  costPrice: number;
+  stockQuantity: number;
+  minStockAlert: number;
+  unit: string;
+  isActive: boolean;
+  updatedAt?: string;
+}
+
+export type InventoryItem = Product;
+
 export interface CartItem {
   id: string; // Unique cart line ID
-  serviceId: string;
+  itemType?: 'SERVICE' | 'PRODUCT';
+  serviceId?: string;
+  productId?: string;
   serviceName: string;
   basePrice: number;
   addons: ServiceAddon[];
@@ -62,17 +83,17 @@ export interface CartItem {
   artistName?: string;
 }
 
-export interface InventoryItem {
+export interface InventoryMovement {
   id: string;
-  sku: string;
-  name: string;
-  category: string;
-  stockQuantity: number;
-  unit: string;
-  minStockAlert: number;
-  costPrice: number;
-  supplier?: string;
-  updatedAt: string;
+  productId: string;
+  product?: { name: string; sku: string; unit: string };
+  movementType: 'STOCK_IN' | 'STOCK_OUT' | 'SALE_DEDUCTION' | 'ADJUSTMENT';
+  quantity: number;
+  beforeQuantity: number;
+  afterQuantity: number;
+  referenceNumber?: string;
+  notes?: string;
+  createdAt: string;
 }
 
 export interface Booking {
@@ -80,18 +101,21 @@ export interface Booking {
   customerId: string;
   customer: Customer;
   artistId: string;
-  artist: { id: string; name: string; phone?: string };
+  artist: { id: string; employeeId?: string; name: string; phone?: string };
   date: string;
   startTime: string;
   endTime: string;
-  status: 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  totalDuration?: number;
+  status: 'PENDING' | 'CONFIRMED' | 'CHECKED_IN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
   notes?: string;
   totalPrice: number;
+  downPaymentAmount?: number;
   items: Array<{
     id: string;
+    serviceId?: string;
     service: Service;
-    addonNamesJson?: string;
     price: number;
+    durationMinutes?: number;
   }>;
 }
 
@@ -108,18 +132,44 @@ export interface Transaction {
   discount: number;
   tax: number;
   total: number;
-  paymentMethod: 'CASH' | 'QRIS' | 'CARD' | 'SPLIT';
+  downPaymentDeducted?: number;
+  remainingAmount?: number;
+  paymentMethod: 'CASH' | 'QRIS' | 'CARD' | 'BANK_TRANSFER' | 'TRANSFER' | 'SPLIT';
   paymentDetailsJson?: string;
   commissionAmount: number;
-  status: 'COMPLETED' | 'REFUNDED';
+  status: 'PAID' | 'COMPLETED' | 'REFUNDED' | 'CANCELLED';
   createdAt: string;
   items: Array<{
     id: string;
+    itemType?: 'SERVICE' | 'PRODUCT';
     serviceName: string;
+    itemName?: string;
     basePrice: number;
     addonsJson?: string;
     quantity: number;
     totalPrice: number;
     artistCommission: number;
   }>;
+}
+
+export interface Expense {
+  id: string;
+  category: 'RENT' | 'UTILITIES' | 'SUPPLIES' | 'SALARY' | 'MARKETING' | 'MAINTENANCE' | 'OTHER';
+  date: string;
+  description: string;
+  amount: number;
+  receiptNumber?: string;
+  receiptImage?: string;
+  createdByUser?: { id: string; name: string };
+  createdAt: string;
+}
+
+export interface AuditLogItem {
+  id: string;
+  user?: { name: string; email: string };
+  action: string;
+  entity: string;
+  entityId?: string;
+  newValuesJson?: string;
+  createdAt: string;
 }

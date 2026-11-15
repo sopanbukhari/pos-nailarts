@@ -9,6 +9,8 @@ import {
   Receipt,
   Sparkles,
   ChevronDown,
+  Package,
+  CalendarCheck,
 } from 'lucide-react';
 import { useCartStore } from '../../store/cartStore';
 import { Customer, User as StaffUser } from '../../types';
@@ -33,6 +35,8 @@ export const CartPanel: React.FC<CartPanelProps> = ({
     selectedCustomer,
     selectedArtistId,
     selectedArtistName,
+    appointmentId,
+    downPaymentAmount,
     discountPercent,
     taxPercent,
     removeItem,
@@ -46,6 +50,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({
     getDiscountAmount,
     getTaxAmount,
     getTotal,
+    getRemainingTotal,
   } = useCartStore();
 
   const [showDiscountInput, setShowDiscountInput] = useState(false);
@@ -55,6 +60,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({
   const discountAmount = getDiscountAmount();
   const taxAmount = getTaxAmount();
   const total = getTotal();
+  const remainingTotal = getRemainingTotal();
 
   const handleApplyDiscount = (pct: number) => {
     setCustomDiscountPercent(pct);
@@ -105,6 +111,21 @@ export const CartPanel: React.FC<CartPanelProps> = ({
             <span>Pilih Pelanggan / Pelanggan Baru</span>
           </button>
         )}
+
+        {/* Appointment Link Badge */}
+        {appointmentId && (
+          <div className="mt-2 px-3 py-1.5 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] font-bold text-amber-800 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <CalendarCheck size={14} className="text-amber-600" />
+              <span>Dari Booking Reservasi</span>
+            </span>
+            {downPaymentAmount > 0 && (
+              <span className="bg-amber-200/60 px-2 py-0.5 rounded-md text-amber-900 font-extrabold">
+                DP: {formatRupiah(downPaymentAmount)}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Cart Items List */}
@@ -116,12 +137,13 @@ export const CartPanel: React.FC<CartPanelProps> = ({
             </div>
             <p className="text-sm font-semibold text-slate-700">Keranjang Masih Kosong</p>
             <p className="text-xs text-slate-400 mt-1 max-w-[200px]">
-              Klik layanan di katalog sebelah kiri untuk memasukkan ke keranjang kasir.
+              Klik layanan atau produk retail di sebelah kiri untuk memasukkan ke keranjang kasir.
             </p>
           </div>
         ) : (
           items.map((item) => {
-            const addonsTotal = item.addons.reduce((sum, a) => sum + a.price, 0);
+            const isProduct = item.itemType === 'PRODUCT';
+            const addonsTotal = (item.addons || []).reduce((sum, a) => sum + a.price, 0);
             const lineTotal = (item.basePrice + addonsTotal) * item.quantity;
 
             return (
@@ -131,7 +153,14 @@ export const CartPanel: React.FC<CartPanelProps> = ({
               >
                 <div className="flex items-start justify-between">
                   <div className="pr-2">
-                    <h4 className="text-xs font-bold text-slate-800 leading-snug">{item.serviceName}</h4>
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-xs font-bold text-slate-800 leading-snug">{item.serviceName}</h4>
+                      {isProduct && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                          Retail
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[11px] text-slate-400 font-medium">
                       {formatRupiah(item.basePrice)}
                     </span>
@@ -144,8 +173,8 @@ export const CartPanel: React.FC<CartPanelProps> = ({
                   </button>
                 </div>
 
-                {/* Add-ons List */}
-                {item.addons && item.addons.length > 0 && (
+                {/* Add-ons List for Services */}
+                {!isProduct && item.addons && item.addons.length > 0 && (
                   <div className="pl-2 border-l-2 border-rose-200 space-y-0.5">
                     {item.addons.map((a, idx) => (
                       <div key={idx} className="flex justify-between text-[11px] text-slate-500">
@@ -157,7 +186,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({
                 )}
 
                 {/* Assigned Artist */}
-                {item.artistName && (
+                {!isProduct && item.artistName && (
                   <div className="text-[10px] text-blush-700 font-medium bg-rose-50/70 px-2 py-0.5 rounded-md inline-block">
                     💅 Artist: {item.artistName}
                   </div>
@@ -220,7 +249,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({
             </button>
           </div>
 
-          {/* Discount presets modal/bar */}
+          {/* Discount presets */}
           {showDiscountInput && (
             <div className="p-2.5 bg-white rounded-xl border border-rose-200 shadow-sm flex items-center gap-1.5 animate-in fade-in">
               <span className="text-[11px] font-semibold text-slate-500">Pilih %:</span>
@@ -267,9 +296,25 @@ export const CartPanel: React.FC<CartPanelProps> = ({
               </div>
             )}
 
+            {downPaymentAmount > 0 && (
+              <div className="flex justify-between text-amber-700 font-bold bg-amber-50 px-2 py-1 rounded-md">
+                <span>DP Reservasi Terbayar</span>
+                <span>-{formatRupiah(downPaymentAmount)}</span>
+              </div>
+            )}
+
             <div className="pt-2 border-t border-slate-200/70 flex justify-between items-baseline">
-              <span className="text-sm font-bold text-slate-800">Total Akhir</span>
-              <span className="text-lg font-black text-blush-600">{formatRupiah(total)}</span>
+              <div>
+                <span className="text-sm font-bold text-slate-800">
+                  {downPaymentAmount > 0 ? 'Sisa Tagihan' : 'Total Akhir'}
+                </span>
+                {downPaymentAmount > 0 && (
+                  <span className="text-[10px] text-slate-400 block">Total: {formatRupiah(total)}</span>
+                )}
+              </div>
+              <span className="text-lg font-black text-blush-600">
+                {formatRupiah(downPaymentAmount > 0 ? remainingTotal : total)}
+              </span>
             </div>
           </div>
 
@@ -279,7 +324,8 @@ export const CartPanel: React.FC<CartPanelProps> = ({
             className="w-full py-3 shadow-md shadow-blush-200"
             onClick={onProceedCheckout}
           >
-            Bayar / Checkout ({items.length} item)
+            Bayar {downPaymentAmount > 0 ? 'Sisa' : ''} ({items.length} item) •{' '}
+            {formatRupiah(downPaymentAmount > 0 ? remainingTotal : total)}
           </Button>
         </div>
       )}

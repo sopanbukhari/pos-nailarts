@@ -8,6 +8,7 @@ import {
   Package,
   UserCheck,
   BarChart3,
+  Receipt,
   LogOut,
   Flower2,
   Crown,
@@ -20,7 +21,7 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useSalonStore, SalonIconType } from '../../store/salonStore';
 
-export type NavTab = 'pos' | 'booking' | 'catalog' | 'customers' | 'inventory' | 'staff' | 'reports' | 'settings';
+export type NavTab = 'pos' | 'booking' | 'catalog' | 'customers' | 'inventory' | 'staff' | 'expenses' | 'reports' | 'settings';
 
 interface SidebarProps {
   currentTab: NavTab;
@@ -38,6 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
     { id: 'customers', label: 'Pelanggan CRM', icon: Users, roles: ['ADMIN', 'CASHIER', 'ARTIST'] },
     { id: 'inventory', label: 'Stok & Inventaris', icon: Package, roles: ['ADMIN', 'CASHIER'] },
     { id: 'staff', label: 'Artis & Komisi', icon: UserCheck, roles: ['ADMIN', 'ARTIST'] },
+    { id: 'expenses', label: 'Pengeluaran', icon: Receipt, roles: ['ADMIN', 'CASHIER'] },
     { id: 'reports', label: 'Laporan Omzet', icon: BarChart3, roles: ['ADMIN'] },
     { id: 'settings', label: 'Pengaturan Salon', icon: Settings, roles: ['ADMIN'] },
   ];

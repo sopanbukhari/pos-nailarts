@@ -52,9 +52,9 @@
   "customers": [
     {
       "id": "cust-1793951850834-978n",
-      "loyaltyPoints": 120,
+      "loyaltyPoints": 159,
       "createdAt": "2026-11-06T07:57:30.834Z",
-      "updatedAt": "2026-11-06T07:57:30.834Z",
+      "updatedAt": "2026-11-07T17:01:11.020Z",
       "name": "Jessica Tanuwijaya",
       "phone": "081899112233",
       "email": "jessica@gmail.com",
@@ -290,11 +290,11 @@
     {
       "id": "inv-1793951850846-w7z6",
       "createdAt": "2026-11-06T07:57:30.846Z",
-      "updatedAt": "2026-11-06T07:57:30.846Z",
+      "updatedAt": "2026-11-07T17:02:23.910Z",
       "sku": "INV-TOP-001",
       "name": "Non-Wipe Glossy Gel Top Coat 15ml",
       "category": "Coating",
-      "stockQuantity": 3,
+      "stockQuantity": 8,
       "unit": "botol",
       "minStockAlert": 5,
       "costPrice": 85000,
@@ -392,6 +392,70 @@
       "endTime": "17:00",
       "notes": "Extension polygel warna maroon/burgundy",
       "totalPrice": 320000
+    },
+    {
+      "id": "bk-1794070839426-mc9f",
+      "status": "COMPLETED",
+      "createdAt": "2026-11-07T17:00:39.426Z",
+      "updatedAt": "2026-11-07T17:08:05.047Z",
+      "customerId": "cust-1793951850834-978n",
+      "artistId": "usr-1793951850800-i4bp",
+      "date": "2026-11-07",
+      "startTime": "11:00",
+      "endTime": "12:15",
+      "notes": "",
+      "totalPrice": 240000
+    },
+    {
+      "id": "bk-1794071213292-ttng",
+      "status": "CONFIRMED",
+      "createdAt": "2026-11-07T17:06:53.292Z",
+      "updatedAt": "2026-11-07T17:06:53.292Z",
+      "customerId": "cust-1",
+      "artistId": "test-artist-sarah",
+      "date": "2026-11-20",
+      "startTime": "13:00",
+      "endTime": "14:30",
+      "totalPrice": 200000,
+      "notes": "Acuan booking Sarah"
+    },
+    {
+      "id": "bk-1794071213294-y9xc",
+      "status": "COMPLETED",
+      "createdAt": "2026-11-07T17:06:53.294Z",
+      "updatedAt": "2026-11-07T17:06:53.295Z",
+      "customerId": "cust-1",
+      "artistId": "test-artist-chloe",
+      "date": "2026-11-20",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "totalPrice": 150000
+    },
+    {
+      "id": "bk-1794071323563-30pm",
+      "status": "IN_PROGRESS",
+      "createdAt": "2026-11-07T17:08:43.563Z",
+      "updatedAt": "2026-11-07T17:11:26.351Z",
+      "customerId": "cust-1793951850837-ox47",
+      "artistId": "usr-1793951850799-6a7e",
+      "date": "2026-11-07",
+      "startTime": "14:00",
+      "endTime": "15:30",
+      "notes": "Bawa referensi Coffin ombre nude",
+      "totalPrice": 320000
+    },
+    {
+      "id": "bk-1794071355994-csvd",
+      "status": "IN_PROGRESS",
+      "createdAt": "2026-11-07T17:09:15.994Z",
+      "updatedAt": "2026-11-07T17:09:50.216Z",
+      "customerId": "cust-1793951850841-a5ex",
+      "artistId": "usr-1793951850800-i4bp",
+      "date": "2026-11-07",
+      "startTime": "14:00",
+      "endTime": "14:45",
+      "notes": "Bawa referensi Coffin ombre nude",
+      "totalPrice": 120000
     }
   ],
   "bookingItems": [
@@ -408,6 +472,27 @@
       "serviceId": "srv-1793951850819-77ag",
       "addonNamesJson": "[]",
       "price": 320000
+    },
+    {
+      "id": "bkit-1794070839426-az1m",
+      "bookingId": "bk-1794070839426-mc9f",
+      "serviceId": "srv-1793951850825-5uq1",
+      "addonNamesJson": null,
+      "price": 240000
+    },
+    {
+      "id": "bkit-1794071323563-c4el",
+      "bookingId": "bk-1794071323563-30pm",
+      "serviceId": "srv-1793951850819-77ag",
+      "addonNamesJson": null,
+      "price": 320000
+    },
+    {
+      "id": "bkit-1794071355994-70h7",
+      "bookingId": "bk-1794071355994-csvd",
+      "serviceId": "srv-1793951850813-dots",
+      "addonNamesJson": null,
+      "price": 120000
     }
   ],
   "transactions": [
@@ -426,6 +511,38 @@
       "subtotal": 155000,
       "total": 140000,
       "paymentDetailsJson": "{\"qrisRef\":\"QRIS-BCA-987654321\"}"
+    },
+    {
+      "id": "tx-1794070799381-65fe",
+      "discount": 0,
+      "tax": 0,
+      "paymentMethod": "CASH",
+      "commissionAmount": 38750,
+      "status": "COMPLETED",
+      "createdAt": "2026-11-07T16:59:59.382Z",
+      "invoiceNumber": "INV-261107-8428",
+      "customerId": "cust-1793951850834-978n",
+      "cashierId": "usr-1793951850795-dgm8",
+      "artistId": "usr-1793951850799-6a7e",
+      "subtotal": 155000,
+      "total": 155000,
+      "paymentDetailsJson": "{\"cashAmount\":200000,\"changeAmount\":45000}"
+    },
+    {
+      "id": "tx-1794070871020-t82q",
+      "discount": 0,
+      "tax": 0,
+      "paymentMethod": "QRIS",
+      "commissionAmount": 48000,
+      "status": "COMPLETED",
+      "createdAt": "2026-11-07T17:01:11.020Z",
+      "invoiceNumber": "INV-261107-3796",
+      "customerId": "cust-1793951850834-978n",
+      "cashierId": "usr-1793951850795-dgm8",
+      "artistId": "usr-1793951850800-i4bp",
+      "subtotal": 240000,
+      "total": 240000,
+      "paymentDetailsJson": "{\"qrisRef\":\"QRIS-BCA-70871011\"}"
     }
   ],
   "transactionItems": [
@@ -439,6 +556,27 @@
       "basePrice": 120000,
       "addonsJson": "[{\"name\":\"Scrub & Masker Tangan Organik\",\"price\":35000}]",
       "totalPrice": 155000
+    },
+    {
+      "id": "txit-1794070799382-9xef",
+      "transactionId": "tx-1794070799381-65fe",
+      "quantity": 1,
+      "artistCommission": 38750,
+      "serviceId": "srv-1793951850813-dots",
+      "serviceName": "Russian E-File Dry Manicure",
+      "basePrice": 120000,
+      "addonsJson": "[{\"id\":\"addon-1793951850813-isvq\",\"serviceId\":\"srv-1793951850813-dots\",\"extraMinutes\":15,\"name\":\"Scrub & Masker Tangan Organik\",\"price\":35000}]",
+      "totalPrice": 155000
+    },
+    {
+      "id": "txit-1794070871020-oxkj",
+      "transactionId": "tx-1794070871020-t82q",
+      "quantity": 1,
+      "artistCommission": 48000,
+      "serviceId": "srv-1793951850825-5uq1",
+      "serviceName": "3D Luxury Nail Art & Crystal Charms",
+      "basePrice": 240000,
+      "totalPrice": 240000
     }
   ]
 }

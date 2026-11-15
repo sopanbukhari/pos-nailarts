@@ -9,6 +9,7 @@ import { CatalogView } from './features/catalog/CatalogView';
 import { CustomerView } from './features/customers/CustomerView';
 import { InventoryView } from './features/inventory/InventoryView';
 import { StaffView } from './features/staff/StaffView';
+import { ExpensesView } from './features/expenses/ExpensesView';
 import { ReportsView } from './features/reports/ReportsView';
 import { SettingsView } from './features/settings/SettingsView';
 
@@ -38,6 +39,8 @@ export function App() {
         return { title: 'Stok Perlengkapan & Kuteks', subtitle: 'Monitoring sisa botol gel, base/top coat, tips, drill bits, dan alert menipis' };
       case 'staff':
         return { title: 'Manajemen Artis & Bagi Hasil Komisi', subtitle: 'Pengaturan persentase komisi, shift kerja, dan rekap payout artis' };
+      case 'expenses':
+        return { title: 'Biaya & Pengeluaran Operasional', subtitle: 'Pencatatan pengeluaran studio, sewa, listrik, bahan baku, dan perawatan' };
       case 'reports':
         return { title: 'Laporan Finansial & Omzet', subtitle: 'Analisis omzet harian/bulanan, performa layanan terlaris, dan laba kotor' };
       case 'settings':
@@ -62,6 +65,7 @@ export function App() {
       {currentTab === 'customers' && <CustomerView />}
       {currentTab === 'inventory' && <InventoryView />}
       {currentTab === 'staff' && <StaffView />}
+      {currentTab === 'expenses' && <ExpensesView />}
       {currentTab === 'reports' && <ReportsView />}
       {currentTab === 'settings' && <SettingsView />}
     </AppLayout>

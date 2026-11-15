@@ -2,6 +2,9 @@
 node_modules/
 dist/
 build/
+client/dist/
+.wrangler/
+.vite-temp/
 
 # Environment files
 .env
@@ -25,3 +28,5 @@ yarn-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+.playwright-mcp/
+tests

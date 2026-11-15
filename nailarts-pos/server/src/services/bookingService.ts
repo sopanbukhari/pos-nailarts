@@ -2,28 +2,50 @@ import prisma from '../config/db';
 
 export class BookingService {
   /**
-   * Cek jadwal ketersediaan slot nail artist
+   * Helper untuk mencari Employee ID dari User ID atau Employee ID
    */
-  static async checkAvailability(artistId: string, date: string, startTime: string, durationMinutes: number) {
+  static async resolveEmployeeId(artistId: string): Promise<string | null> {
+    const emp = await prisma.employee.findFirst({
+      where: {
+        OR: [{ id: artistId }, { userId: artistId }],
+      },
+    });
+    return emp ? emp.id : null;
+  }
+
+  /**
+   * Cek ketersediaan slot nail artist & deteksi jadwal bentrok
+   */
+  static async checkAvailability(
+    artistId: string,
+    date: string,
+    startTime: string,
+    durationMinutes: number,
+    excludeAppointmentId?: string
+  ): Promise<boolean> {
+    const employeeId = await this.resolveEmployeeId(artistId);
+    if (!employeeId) return false;
+
     const [startH, startM] = startTime.split(':').map(Number);
     const startTotalMinutes = startH * 60 + startM;
     const endTotalMinutes = startTotalMinutes + durationMinutes;
 
-    const existingBookings = await prisma.booking.findMany({
+    const existingAppointments = await prisma.appointment.findMany({
       where: {
-        artistId,
+        employeeId,
         date,
-        status: { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
+        status: { in: ['PENDING', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS'] },
+        ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}),
       },
     });
 
-    const isConflict = existingBookings.some(b => {
+    const isConflict = existingAppointments.some((b) => {
       const [bStartH, bStartM] = b.startTime.split(':').map(Number);
       const [bEndH, bEndM] = b.endTime.split(':').map(Number);
       const bStartTotal = bStartH * 60 + bStartM;
       const bEndTotal = bEndH * 60 + bEndM;
 
-      // Overlapping condition
+      // Overlapping condition: max(start1, start2) < min(end1, end2)
       return Math.max(startTotalMinutes, bStartTotal) < Math.min(endTotalMinutes, bEndTotal);
     });
 

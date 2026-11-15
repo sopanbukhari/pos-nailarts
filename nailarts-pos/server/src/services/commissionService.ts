@@ -2,35 +2,18 @@ import prisma from '../config/db';
 
 export class CommissionService {
   /**
-   * Hitung komisi artist untuk item transaksi tertentu
-   */
-  static async calculateItemCommission(artistId: string | undefined, servicePrice: number): Promise<number> {
-    if (!artistId) return 0;
-
-    const artist = await prisma.user.findUnique({
-      where: { id: artistId },
-      select: { commissionRate: true, role: true },
-    });
-
-    if (!artist) return 0;
-    const rate = artist.commissionRate || 0.20; // Default 20%
-    return Math.round(servicePrice * rate);
-  }
-
-  /**
-   * Rekap ringkasan komisi per nail artist
+   * Rekap ringkasan komisi per nail artist dari tabel Commission & Sale
    */
   static async getArtistCommissionSummary(startDate?: string, endDate?: string) {
-    const artists = await prisma.user.findMany({
-      where: { role: 'ARTIST' },
-      select: { id: true, name: true, phone: true, commissionRate: true },
+    const employees = await prisma.employee.findMany({
+      include: {
+        user: { select: { id: true, name: true, phone: true, email: true, role: true } },
+        schedules: true,
+      },
+      orderBy: { employeeNumber: 'asc' },
     });
 
-    const whereClause: any = {
-      status: 'COMPLETED',
-      artistId: { not: null },
-    };
-
+    const whereClause: any = {};
     if (startDate && endDate) {
       whereClause.createdAt = {
         gte: new Date(startDate),
@@ -38,29 +21,72 @@ export class CommissionService {
       };
     }
 
-    const transactions = await prisma.transaction.findMany({
+    const commissions = await prisma.commission.findMany({
       where: whereClause,
       include: {
-        items: true,
+        sale: {
+          include: {
+            items: true,
+            customer: true,
+          },
+        },
       },
     });
 
-    return artists.map(artist => {
-      const artistTx = transactions.filter(t => t.artistId === artist.id);
-      const totalServices = artistTx.reduce((sum: number, tx: any) => sum + (tx.items || []).reduce((iSum: number, it: any) => iSum + (it.quantity || 1), 0), 0);
-      const totalGross = artistTx.reduce((sum: number, tx: any) => sum + tx.subtotal, 0);
-      const totalCommission = artistTx.reduce((sum: number, tx: any) => sum + tx.commissionAmount, 0);
+    return employees.map((emp) => {
+      const empComms = commissions.filter((c) => c.employeeId === emp.id);
+      const pendingComms = empComms.filter((c) => c.status === 'PENDING');
+      const paidComms = empComms.filter((c) => c.status === 'PAID');
+
+      // Unique sales
+      const uniqueSalesIds = new Set(empComms.map((c) => c.saleId));
+      const totalServices = empComms.length;
+      const totalCommission = empComms.reduce((sum, c) => sum + c.amount, 0);
+      const pendingPayout = pendingComms.reduce((sum, c) => sum + c.amount, 0);
+      const paidPayout = paidComms.reduce((sum, c) => sum + c.amount, 0);
+
+      // Hitung omzet kotor yang dikontribusikan
+      const totalGross = empComms.reduce((sum, c) => {
+        return sum + (c.sale ? c.sale.subtotal : 0);
+      }, 0);
 
       return {
-        artistId: artist.id,
-        name: artist.name,
-        phone: artist.phone,
-        commissionRatePercent: Math.round(artist.commissionRate * 100),
-        completedTransactionsCount: artistTx.length,
+        id: emp.id,
+        userId: emp.userId,
+        artistId: emp.user.id,
+        employeeNumber: emp.employeeNumber,
+        name: emp.user.name,
+        phone: emp.user.phone,
+        email: emp.user.email,
+        position: emp.position,
+        commissionRate: emp.commissionRate,
+        commissionRatePercent: Math.round(emp.commissionRate * 100),
+        completedTransactionsCount: uniqueSalesIds.size,
         totalServicesHandled: totalServices,
         totalGrossGenerated: totalGross,
         totalCommissionPayout: totalCommission,
+        pendingCommission: pendingPayout,
+        paidCommission: paidPayout,
+        schedules: emp.schedules,
       };
     });
+  }
+
+  /**
+   * Tandai komisi sebagai telah dibayarkan (payout)
+   */
+  static async payoutCommissions(employeeId: string) {
+    const updated = await prisma.commission.updateMany({
+      where: {
+        employeeId,
+        status: 'PENDING',
+      },
+      data: {
+        status: 'PAID',
+        payoutDate: new Date(),
+      },
+    });
+
+    return updated;
   }
 }

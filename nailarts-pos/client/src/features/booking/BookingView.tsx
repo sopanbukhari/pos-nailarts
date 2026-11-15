@@ -8,12 +8,18 @@ import {
   Clock3,
   ArrowRight,
   Sparkles,
+  Edit2,
+  XCircle,
+  AlertCircle,
+  CheckCircle2,
+  CalendarClock,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { Modal } from '../../components/ui/Modal';
 import { NewBookingModal } from './NewBookingModal';
 import { Booking, Customer, Service, User as ArtistUser } from '../../types';
-import { formatRupiah } from '../../utils/format';
+import { formatRupiah, formatDate } from '../../utils/format';
 import { useCartStore } from '../../store/cartStore';
 import api from '../../lib/axios';
 
@@ -27,10 +33,18 @@ export const BookingView: React.FC<BookingViewProps> = ({ onNavigateToPos }) => 
   const [artists, setArtists] = useState<ArtistUser[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const { addItem, setCustomer, setArtist } = useCartStore();
+  // Reschedule modal state
+  const [rescheduleBooking, setRescheduleBooking] = useState<Booking | null>(null);
+  const [newDate, setNewDate] = useState('');
+  const [newTime, setNewTime] = useState('11:00');
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
+
+  const { addItem, setCustomer, setArtist, setAppointment } = useCartStore();
 
   useEffect(() => {
     fetchInitialData();
@@ -38,7 +52,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ onNavigateToPos }) => 
 
   useEffect(() => {
     fetchBookings();
-  }, [selectedDate]);
+  }, [selectedDate, statusFilter]);
 
   const fetchInitialData = async () => {
     try {
@@ -58,7 +72,11 @@ export const BookingView: React.FC<BookingViewProps> = ({ onNavigateToPos }) => 
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/bookings?date=${selectedDate}`);
+      let url = `/bookings?date=${selectedDate}`;
+      if (statusFilter !== 'ALL') {
+        url += `&status=${statusFilter}`;
+      }
+      const res = await api.get(url);
       if (res.data.success) {
         setBookings(res.data.data);
       }
@@ -80,11 +98,12 @@ export const BookingView: React.FC<BookingViewProps> = ({ onNavigateToPos }) => 
 
   const handleSendToPos = (booking: Booking) => {
     setCustomer(booking.customer);
-    setArtist(booking.artist.id, booking.artist.name);
+    setArtist(booking.artist?.id || null, booking.artist?.name || null);
+    setAppointment(booking.id, booking.downPaymentAmount || 0);
 
     booking.items.forEach((item) => {
       if (item.service) {
-        addItem(item.service, [], booking.artist.id, booking.artist.name);
+        addItem(item.service, [], booking.artist?.id, booking.artist?.name);
       }
     });
 
@@ -92,18 +111,55 @@ export const BookingView: React.FC<BookingViewProps> = ({ onNavigateToPos }) => 
     onNavigateToPos();
   };
 
+  const handleOpenReschedule = (booking: Booking) => {
+    setRescheduleBooking(booking);
+    setNewDate(booking.date);
+    setNewTime(booking.startTime);
+    setRescheduleError(null);
+  };
+
+  const handleSaveReschedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rescheduleBooking) return;
+
+    setIsRescheduling(true);
+    setRescheduleError(null);
+
+    try {
+      const res = await api.put(`/bookings/${rescheduleBooking.id}`, {
+        date: newDate,
+        startTime: newTime,
+      });
+
+      if (res.data.success) {
+        setRescheduleBooking(null);
+        fetchBookings();
+      }
+    } catch (err: any) {
+      setRescheduleError(err.response?.data?.message || 'Jadwal bentrok atau gagal mengubah jadwal.');
+    } finally {
+      setIsRescheduling(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case 'PENDING':
+        return <Badge variant="amber">Menunggu</Badge>;
       case 'CONFIRMED':
         return <Badge variant="pink">Terkonfirmasi</Badge>;
+      case 'CHECKED_IN':
+        return <Badge variant="indigo">Hadir (Check-in)</Badge>;
       case 'IN_PROGRESS':
         return <Badge variant="indigo">Sedang Dikerjakan</Badge>;
       case 'COMPLETED':
         return <Badge variant="emerald">Selesai</Badge>;
       case 'CANCELLED':
         return <Badge variant="slate">Dibatalkan</Badge>;
+      case 'NO_SHOW':
+        return <Badge variant="rose">Tidak Hadir (No Show)</Badge>;
       default:
-        return <Badge variant="amber">Menunggu</Badge>;
+        return <Badge variant="slate">{status}</Badge>;
     }
   };
 
@@ -111,7 +167,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ onNavigateToPos }) => 
     <div className="space-y-6">
       {/* Top Filter and Actions */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-4 shadow-xs">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
             <Calendar size={16} className="text-blush-600" />
             <input
@@ -122,8 +178,23 @@ export const BookingView: React.FC<BookingViewProps> = ({ onNavigateToPos }) => 
             />
           </div>
 
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700"
+          >
+            <option value="ALL">Semua Status Booking</option>
+            <option value="PENDING">Menunggu Konfirmasi</option>
+            <option value="CONFIRMED">Terkonfirmasi</option>
+            <option value="CHECKED_IN">Check-in (Hadir)</option>
+            <option value="IN_PROGRESS">Sedang Dikerjakan</option>
+            <option value="COMPLETED">Selesai</option>
+            <option value="CANCELLED">Dibatalkan</option>
+            <option value="NO_SHOW">Tidak Hadir (No Show)</option>
+          </select>
+
           <span className="text-xs text-slate-500 font-medium">
-            Total {bookings.length} Janji Temu Hari Ini
+            Total {bookings.length} Janji Temu
           </span>
         </div>
 
@@ -160,17 +231,25 @@ export const BookingView: React.FC<BookingViewProps> = ({ onNavigateToPos }) => 
             >
               {/* Left Column: Time & Customer */}
               <div className="flex items-start gap-4">
-                <div className="w-20 text-center py-2 px-2.5 rounded-xl bg-rose-50/70 border border-rose-100 flex-shrink-0">
+                <div className="w-24 text-center py-2 px-2.5 rounded-xl bg-rose-50/70 border border-rose-100 flex-shrink-0">
                   <span className="text-xs font-black text-blush-700 block">
                     {booking.startTime}
                   </span>
                   <span className="text-[10px] text-slate-400">s/d {booking.endTime}</span>
+                  <span className="text-[9px] font-bold text-slate-500 block mt-0.5">
+                    ({booking.totalDuration} mnt)
+                  </span>
                 </div>
 
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="font-bold text-sm text-slate-900">{booking.customer.name}</h3>
                     {getStatusBadge(booking.status)}
+                    {(booking.downPaymentAmount || 0) > 0 && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                        💰 DP: {formatRupiah(booking.downPaymentAmount || 0)}
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-slate-500">
                     No. Telp: {booking.customer.phone}
@@ -194,44 +273,54 @@ export const BookingView: React.FC<BookingViewProps> = ({ onNavigateToPos }) => 
                   💅 Nail Artist: <span className="text-blush-700">{booking.artist?.name}</span>
                 </span>
                 <span className="text-slate-400 mt-0.5">
-                  Layanan: {booking.items.map(it => it.service?.name).join(', ')}
+                  Layanan: {booking.items.map((it) => it.service?.name).join(', ')}
                 </span>
                 <span className="font-bold text-slate-900 mt-1">
-                  Estimasi: {formatRupiah(booking.totalPrice)}
+                  Estimasi Biaya: {formatRupiah(booking.totalPrice)}
                 </span>
               </div>
 
               {/* Right Column: Actions */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Status Quick Changer Dropdown */}
+                <select
+                  value={booking.status}
+                  onChange={(e) => handleUpdateStatus(booking.id, e.target.value)}
+                  className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 cursor-pointer"
+                >
+                  <option value="PENDING">Menunggu</option>
+                  <option value="CONFIRMED">Terkonfirmasi</option>
+                  <option value="CHECKED_IN">Hadir (Check-in)</option>
+                  <option value="IN_PROGRESS">Sedang Dikerjakan</option>
+                  <option value="COMPLETED">Selesai</option>
+                  <option value="CANCELLED">Dibatalkan</option>
+                  <option value="NO_SHOW">No Show</option>
+                </select>
+
+                {/* Reschedule Button */}
+                {booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={() => handleOpenReschedule(booking)}
+                    title="Ubah Jadwal"
+                  >
+                    <CalendarClock size={14} />
+                    <span className="hidden sm:inline">Reschedule</span>
+                  </Button>
+                )}
+
+                {/* POS Button */}
                 {booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED' && (
                   <Button
                     variant="primary"
                     size="sm"
-                    className="flex items-center gap-1.5"
+                    className="flex items-center gap-1.5 shadow-xs"
                     onClick={() => handleSendToPos(booking)}
                   >
                     <span>Buka di Kasir POS</span>
                     <ArrowRight size={14} />
-                  </Button>
-                )}
-
-                {booking.status === 'CONFIRMED' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleUpdateStatus(booking.id, 'IN_PROGRESS')}
-                  >
-                    Mulai Treatment
-                  </Button>
-                )}
-
-                {booking.status === 'IN_PROGRESS' && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleUpdateStatus(booking.id, 'COMPLETED')}
-                  >
-                    Tandai Selesai
                   </Button>
                 )}
               </div>
@@ -240,6 +329,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ onNavigateToPos }) => 
         )}
       </div>
 
+      {/* New Booking Modal */}
       <NewBookingModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -250,6 +340,94 @@ export const BookingView: React.FC<BookingViewProps> = ({ onNavigateToPos }) => 
           fetchBookings();
         }}
       />
+
+      {/* Reschedule Modal */}
+      {rescheduleBooking && (
+        <Modal
+          isOpen={Boolean(rescheduleBooking)}
+          onClose={() => setRescheduleBooking(null)}
+          title="Ubah Jadwal Janji Temu (Reschedule)"
+          subtitle={`Pelanggan: ${rescheduleBooking.customer.name} • Nail Artist: ${rescheduleBooking.artist?.name}`}
+          maxWidth="md"
+        >
+          <form onSubmit={handleSaveReschedule} className="space-y-4">
+            {rescheduleError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle size={16} />
+                <span>{rescheduleError}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Tanggal Baru:
+                </label>
+                <input
+                  type="date"
+                  value={newDate}
+                  onChange={(e) => setNewDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Jam Mulai Baru:
+                </label>
+                <select
+                  value={newTime}
+                  onChange={(e) => setNewTime(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold"
+                >
+                  {[
+                    '09:00',
+                    '10:00',
+                    '11:00',
+                    '12:00',
+                    '13:00',
+                    '14:00',
+                    '15:00',
+                    '16:00',
+                    '17:00',
+                    '18:00',
+                    '19:00',
+                  ].map((t) => (
+                    <option key={t} value={t}>
+                      {t} WIB
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600">
+              Durasi pengerjaan: <strong>{rescheduleBooking.totalDuration} menit</strong>.
+              Sistem akan otomatis mengecek agar tidak terjadi bentrok jadwal bagi Nail Artist.
+            </div>
+
+            <div className="flex gap-2.5 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setRescheduleBooking(null)}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                className="flex-1"
+                disabled={isRescheduling}
+              >
+                {isRescheduling ? 'Menyimpan...' : 'Simpan Jadwal Baru'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };

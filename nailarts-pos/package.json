@@ -13,9 +13,13 @@
     "dev:client": "npm run dev --prefix client",
     "install:all": "npm install && npm install --prefix server && npm install --prefix client",
     "seed": "npm run seed --prefix server",
-    "build": "npm run build --prefix server && npm run build --prefix client"
+    "build": "npm run build --prefix server && npm run build --prefix client",
+    "build:client": "npm run build --prefix client",
+    "build:pages": "npm run build --prefix client && node -e \"const fs=require('fs'); if(fs.existsSync('client/dist')){fs.cpSync('client/dist', 'dist', {recursive:true});}\"",
+    "pages:deploy": "npx wrangler pages deploy client/dist"
   },
   "dependencies": {
+    "@prisma/client": "^6.4.1",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -29,6 +33,7 @@
     "@types/jsonwebtoken": "^9.0.8",
     "@types/node": "^22.13.4",
     "concurrently": "^9.1.2",
+    "prisma": "^6.4.1",
     "typescript": "^5.7.3"
   },
   "optionalDependencies": {

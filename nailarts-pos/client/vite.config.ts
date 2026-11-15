@@ -20,7 +20,16 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../dist',
+    outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-utils': ['axios', 'zustand', 'clsx', 'tailwind-merge'],
+        },
+      },
+    },
   },
 });

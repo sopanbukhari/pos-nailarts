@@ -1,21 +1,25 @@
 import { create } from 'zustand';
-import { CartItem, Customer, Service, ServiceAddon } from '../types';
+import { CartItem, Customer, Product, Service, ServiceAddon } from '../types';
 
 interface CartState {
   items: CartItem[];
   selectedCustomer: Customer | null;
   selectedArtistId: string | null;
   selectedArtistName: string | null;
+  appointmentId: string | null;
+  downPaymentAmount: number;
   discount: number; // in rupiah
   discountPercent: number;
   taxPercent: number; // e.g. 0% or 11%
 
   // Actions
   addItem: (service: Service, selectedAddons?: ServiceAddon[], artistId?: string, artistName?: string) => void;
+  addProduct: (product: Product, quantity?: number) => void;
   removeItem: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   setCustomer: (customer: Customer | null) => void;
   setArtist: (artistId: string | null, artistName: string | null) => void;
+  setAppointment: (appointmentId: string | null, downPayment?: number) => void;
   setDiscount: (amount: number, percent?: number) => void;
   setTaxPercent: (tax: number) => void;
   clearCart: () => void;
@@ -25,6 +29,7 @@ interface CartState {
   getDiscountAmount: () => number;
   getTaxAmount: () => number;
   getTotal: () => number;
+  getRemainingTotal: () => number;
 }
 
 export const useCartStore = create<CartState>((set, get) => ({
@@ -32,16 +37,20 @@ export const useCartStore = create<CartState>((set, get) => ({
   selectedCustomer: null,
   selectedArtistId: null,
   selectedArtistName: null,
+  appointmentId: null,
+  downPaymentAmount: 0,
   discount: 0,
   discountPercent: 0,
   taxPercent: 0,
 
   addItem: (service, selectedAddons = [], artistId, artistName) => {
-    const addonsKey = selectedAddons.map(a => a.name).sort().join('|');
+    const addonsKey = selectedAddons.map((a) => a.name).sort().join('|');
     const existingIndex = get().items.findIndex(
-      it => it.serviceId === service.id &&
-            it.addons.map(a => a.name).sort().join('|') === addonsKey &&
-            it.artistId === (artistId || get().selectedArtistId)
+      (it) =>
+        it.itemType !== 'PRODUCT' &&
+        it.serviceId === service.id &&
+        it.addons.map((a) => a.name).sort().join('|') === addonsKey &&
+        it.artistId === (artistId || get().selectedArtistId)
     );
 
     if (existingIndex > -1) {
@@ -51,6 +60,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     } else {
       const newItem: CartItem = {
         id: `cart-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        itemType: 'SERVICE',
         serviceId: service.id,
         serviceName: service.name,
         basePrice: service.basePrice,
@@ -63,8 +73,31 @@ export const useCartStore = create<CartState>((set, get) => ({
     }
   },
 
+  addProduct: (product, quantity = 1) => {
+    const existingIndex = get().items.findIndex(
+      (it) => it.itemType === 'PRODUCT' && it.productId === product.id
+    );
+
+    if (existingIndex > -1) {
+      const updated = [...get().items];
+      updated[existingIndex].quantity += quantity;
+      set({ items: updated });
+    } else {
+      const newItem: CartItem = {
+        id: `cart-prod-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        itemType: 'PRODUCT',
+        productId: product.id,
+        serviceName: product.name,
+        basePrice: product.retailPrice,
+        addons: [],
+        quantity,
+      };
+      set({ items: [...get().items, newItem] });
+    }
+  },
+
   removeItem: (itemId) => {
-    set({ items: get().items.filter(it => it.id !== itemId) });
+    set({ items: get().items.filter((it) => it.id !== itemId) });
   },
 
   updateQuantity: (itemId, quantity) => {
@@ -73,27 +106,32 @@ export const useCartStore = create<CartState>((set, get) => ({
       return;
     }
     set({
-      items: get().items.map(it => (it.id === itemId ? { ...it, quantity } : it)),
+      items: get().items.map((it) => (it.id === itemId ? { ...it, quantity } : it)),
     });
   },
 
   setCustomer: (customer) => set({ selectedCustomer: customer }),
   setArtist: (artistId, artistName) => set({ selectedArtistId: artistId, selectedArtistName: artistName }),
+  setAppointment: (appointmentId, downPayment = 0) =>
+    set({ appointmentId, downPaymentAmount: downPayment }),
 
   setDiscount: (amount, percent = 0) => set({ discount: amount, discountPercent: percent }),
   setTaxPercent: (taxPercent) => set({ taxPercent }),
 
-  clearCart: () => set({
-    items: [],
-    selectedCustomer: null,
-    discount: 0,
-    discountPercent: 0,
-    taxPercent: 0,
-  }),
+  clearCart: () =>
+    set({
+      items: [],
+      selectedCustomer: null,
+      appointmentId: null,
+      downPaymentAmount: 0,
+      discount: 0,
+      discountPercent: 0,
+      taxPercent: 0,
+    }),
 
   getSubtotal: () => {
     return get().items.reduce((sum, item) => {
-      const addonsTotal = item.addons.reduce((aSum, a) => aSum + a.price, 0);
+      const addonsTotal = (item.addons || []).reduce((aSum, a) => aSum + a.price, 0);
       return sum + (item.basePrice + addonsTotal) * item.quantity;
     }, 0);
   },
@@ -120,5 +158,11 @@ export const useCartStore = create<CartState>((set, get) => ({
     const discount = get().getDiscountAmount();
     const tax = get().getTaxAmount();
     return Math.max(0, subtotal - discount + tax);
+  },
+
+  getRemainingTotal: () => {
+    const total = get().getTotal();
+    const dp = get().downPaymentAmount || 0;
+    return Math.max(0, total - dp);
   },
 }));

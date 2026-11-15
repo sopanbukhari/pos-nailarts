@@ -9,8 +9,8 @@ export class CustomerController {
 
       if (search) {
         whereClause.OR = [
-          { name: { contains: String(search) } },
-          { phone: { contains: String(search) } },
+          { name: { contains: String(search), mode: 'insensitive' } },
+          { phone: { contains: String(search), mode: 'insensitive' } },
         ];
       }
 
@@ -18,14 +18,30 @@ export class CustomerController {
         where: whereClause,
         orderBy: { updatedAt: 'desc' },
         include: {
-          transactions: {
+          sales: {
+            take: 3,
+            orderBy: { createdAt: 'desc' },
+            include: { items: true, payments: true },
+          },
+          appointments: {
             take: 3,
             orderBy: { createdAt: 'desc' },
           },
         },
       });
 
-      res.json({ success: true, data: customers });
+      // Backward compatibility aliases
+      const mapped = customers.map((c: any) => ({
+        ...c,
+        transactions: (c.sales || []).map((s: any) => ({
+          ...s,
+          total: s.totalAmount,
+          paymentMethod: s.payments?.[0]?.paymentMethod || 'CASH',
+        })),
+        bookings: c.appointments || [],
+      }));
+
+      res.json({ success: true, data: mapped });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }
@@ -33,17 +49,20 @@ export class CustomerController {
 
   static async getCustomerById(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      const customer = await prisma.customer.findUnique({
+      const id = String(req.params.id);
+      const customer: any = await prisma.customer.findUnique({
         where: { id },
         include: {
-          transactions: {
+          sales: {
             orderBy: { createdAt: 'desc' },
-            include: { items: true },
+            include: { items: true, payments: true },
           },
-          bookings: {
+          appointments: {
             orderBy: { createdAt: 'desc' },
-            include: { artist: true },
+            include: {
+              employee: { include: { user: true } },
+              services: { include: { service: true } },
+            },
           },
         },
       });
@@ -53,7 +72,20 @@ export class CustomerController {
         return;
       }
 
-      res.json({ success: true, data: customer });
+      const mapped = {
+        ...customer,
+        transactions: (customer.sales || []).map((s: any) => ({
+          ...s,
+          total: s.totalAmount,
+          paymentMethod: s.payments?.[0]?.paymentMethod || 'CASH',
+        })),
+        bookings: (customer.appointments || []).map((a: any) => ({
+          ...a,
+          artist: a.employee?.user,
+        })),
+      };
+
+      res.json({ success: true, data: mapped });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }
@@ -68,7 +100,7 @@ export class CustomerController {
         return;
       }
 
-      const existing = await prisma.customer.findUnique({ where: { phone } });
+      const existing = await prisma.customer.findUnique({ where: { phone: String(phone) } });
       if (existing) {
         res.status(400).json({ success: false, message: 'Nomor telepon sudah terdaftar untuk pelanggan lain.' });
         return;
@@ -76,13 +108,13 @@ export class CustomerController {
 
       const customer = await prisma.customer.create({
         data: {
-          name,
-          phone,
-          email,
-          notes,
-          nailShapePreference,
-          colorPreferences,
-          allergies,
+          name: String(name),
+          phone: String(phone),
+          email: email ? String(email) : null,
+          notes: notes ? String(notes) : null,
+          nailShapePreference: nailShapePreference ? String(nailShapePreference) : null,
+          colorPreferences: colorPreferences ? String(colorPreferences) : null,
+          allergies: allergies ? String(allergies) : null,
         },
       });
 
@@ -98,24 +130,23 @@ export class CustomerController {
 
   static async updateCustomer(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      const { name, phone, email, notes, nailShapePreference, colorPreferences, allergies, loyaltyPoints } = req.body;
+      const id = String(req.params.id);
+      const { name, phone, email, notes, nailShapePreference, colorPreferences, allergies } = req.body;
 
       const updated = await prisma.customer.update({
         where: { id },
         data: {
-          name,
-          phone,
-          email,
-          notes,
-          nailShapePreference,
-          colorPreferences,
-          allergies,
-          loyaltyPoints: loyaltyPoints !== undefined ? Number(loyaltyPoints) : undefined,
+          ...(name ? { name: String(name) } : {}),
+          ...(phone ? { phone: String(phone) } : {}),
+          ...(email !== undefined ? { email: email ? String(email) : null } : {}),
+          ...(notes !== undefined ? { notes: notes ? String(notes) : null } : {}),
+          ...(nailShapePreference !== undefined ? { nailShapePreference: nailShapePreference ? String(nailShapePreference) : null } : {}),
+          ...(colorPreferences !== undefined ? { colorPreferences: colorPreferences ? String(colorPreferences) : null } : {}),
+          ...(allergies !== undefined ? { allergies: allergies ? String(allergies) : null } : {}),
         },
       });
 
-      res.json({ success: true, message: 'Profil pelanggan diperbarui.', data: updated });
+      res.json({ success: true, message: 'Data pelanggan berhasil diperbarui.', data: updated });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }

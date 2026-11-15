@@ -352,9 +352,15 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 <span>+{formatRupiah(transaction.tax)}</span>
               </div>
             )}
+            {(transaction as any).downPaymentDeducted > 0 && (
+              <div className="flex justify-between text-amber-700 font-bold">
+                <span>DP Reservasi Terbayar:</span>
+                <span>-{formatRupiah((transaction as any).downPaymentDeducted)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm font-black pt-1">
-              <span>TOTAL BAYAR:</span>
-              <span>{formatRupiah(transaction.total)}</span>
+              <span>{(transaction as any).downPaymentDeducted > 0 ? 'SISA DIBAYAR:' : 'TOTAL BAYAR:'}</span>
+              <span>{formatRupiah((transaction as any).remainingAmount !== undefined ? (transaction as any).remainingAmount : transaction.total)}</span>
             </div>
             <div className="flex justify-between text-slate-600 text-[10px]">
               <span>Metode Pembayaran:</span>

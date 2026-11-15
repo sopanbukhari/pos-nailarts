@@ -4,13 +4,14 @@ import prisma from '../config/db';
 export class CatalogController {
   static async getCategories(req: Request, res: Response): Promise<void> {
     try {
-      const categories = await prisma.category.findMany({
+      const categories = await prisma.serviceCategory.findMany({
         include: {
           services: {
             where: { isActive: true },
             include: { addons: true },
           },
         },
+        orderBy: { name: 'asc' },
       });
       res.json({ success: true, data: categories });
     } catch (error: any) {
@@ -25,7 +26,7 @@ export class CatalogController {
 
       if (categoryId) whereClause.categoryId = String(categoryId);
       if (search) {
-        whereClause.name = { contains: String(search) };
+        whereClause.name = { contains: String(search), mode: 'insensitive' };
       }
 
       const services = await prisma.service.findMany({
@@ -45,7 +46,7 @@ export class CatalogController {
 
   static async createService(req: Request, res: Response): Promise<void> {
     try {
-      const { name, categoryId, basePrice, durationMinutes = 45, description, image, addons = [] } = req.body;
+      const { name, categoryId, basePrice, durationMinutes = 45, description, image, commissionRate, addons = [] } = req.body;
 
       const service = await prisma.service.create({
         data: {
@@ -55,6 +56,7 @@ export class CatalogController {
           durationMinutes: Number(durationMinutes),
           description,
           image,
+          commissionRate: commissionRate !== undefined ? Number(commissionRate) : null,
           addons: {
             create: addons.map((a: any) => ({
               name: a.name,
@@ -78,8 +80,8 @@ export class CatalogController {
 
   static async updateService(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      const { name, categoryId, basePrice, durationMinutes, description, image, isActive } = req.body;
+      const id = String(req.params.id);
+      const { name, categoryId, basePrice, durationMinutes, description, image, commissionRate, isActive } = req.body;
 
       const updated = await prisma.service.update({
         where: { id },
@@ -90,12 +92,26 @@ export class CatalogController {
           durationMinutes: durationMinutes !== undefined ? Number(durationMinutes) : undefined,
           description,
           image,
+          commissionRate: commissionRate !== undefined ? Number(commissionRate) : undefined,
           isActive,
         },
         include: { addons: true, category: true },
       });
 
       res.json({ success: true, message: 'Layanan berhasil diperbarui.', data: updated });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteService(req: Request, res: Response): Promise<void> {
+    try {
+      const id = String(req.params.id);
+      await prisma.service.update({
+        where: { id },
+        data: { isActive: false },
+      });
+      res.json({ success: true, message: 'Layanan berhasil dinonaktifkan.' });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }

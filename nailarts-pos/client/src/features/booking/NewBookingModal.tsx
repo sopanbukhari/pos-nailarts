@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, User, Check, Sparkles, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, User, Check, Sparkles, AlertCircle, Plus, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { Customer, Service, User as ArtistUser } from '../../types';
@@ -27,19 +27,37 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
   const [artistId, setArtistId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [startTime, setStartTime] = useState('11:00');
-  const [selectedServiceId, setSelectedServiceId] = useState('');
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [downPaymentAmount, setDownPaymentAmount] = useState<number>(0);
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const selectedService = services.find(s => s.id === selectedServiceId);
+  const handleToggleService = (sId: string) => {
+    if (selectedServiceIds.includes(sId)) {
+      setSelectedServiceIds(selectedServiceIds.filter((id) => id !== sId));
+    } else {
+      setSelectedServiceIds([...selectedServiceIds, sId]);
+    }
+  };
+
+  const selectedServices = services.filter((s) => selectedServiceIds.includes(s.id));
+  const totalDuration = selectedServices.reduce((acc, s) => acc + (s.durationMinutes || 45), 0);
+  const totalPrice = selectedServices.reduce((acc, s) => acc + (s.basePrice || 0), 0);
+
+  // Quick calculate estimated end time
+  const [startH, startM] = startTime.split(':').map(Number);
+  const endMinutesTotal = startH * 60 + (startM || 0) + totalDuration;
+  const endH = Math.floor(endMinutesTotal / 60) % 24;
+  const endM = endMinutesTotal % 60;
+  const calculatedEndTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerId || !artistId || !selectedServiceId) {
-      setError('Mohon lengkapi data pelanggan, nail artist, dan layanan.');
+    if (!customerId || !artistId || selectedServiceIds.length === 0) {
+      setError('Mohon lengkapi data pelanggan, nail artist, dan minimal 1 layanan kuku.');
       return;
     }
 
@@ -52,14 +70,13 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
         artistId,
         date,
         startTime,
-        notes,
-        items: [
-          {
-            serviceId: selectedService?.id,
-            price: selectedService?.basePrice,
-            durationMinutes: selectedService?.durationMinutes,
-          },
-        ],
+        downPaymentAmount: Number(downPaymentAmount) || 0,
+        notes: notes.trim() || undefined,
+        items: selectedServices.map((s) => ({
+          serviceId: s.id,
+          price: s.basePrice,
+          durationMinutes: s.durationMinutes,
+        })),
       });
 
       if (res.data.success) {
@@ -78,7 +95,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Buat Janji Temu (Booking Baru)"
-      subtitle="Jadwalkan treatment kuku untuk pelanggan"
+      subtitle="Jadwalkan treatment kuku untuk pelanggan dengan sistem anti double-booking"
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -92,7 +109,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
         {/* Pilih Pelanggan */}
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-            Pelanggan:
+            Pelanggan (Customer):
           </label>
           <select
             value={customerId}
@@ -103,13 +120,13 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
             <option value="">-- Pilih Pelanggan --</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name} ({c.phone}) - Preferensi: {c.nailShapePreference || 'Standard'}
+                {c.name} ({c.phone}) - {c.nailShapePreference ? `Preferensi: ${c.nailShapePreference}` : 'Umum'}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Pilih Nail Artist & Waktu */}
+        {/* Pilih Nail Artist, Tanggal & Jam */}
         <div className="grid grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -152,7 +169,19 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
               onChange={(e) => setStartTime(e.target.value)}
               className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium"
             >
-              {['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'].map((t) => (
+              {[
+                '09:00',
+                '10:00',
+                '11:00',
+                '12:00',
+                '13:00',
+                '14:00',
+                '15:00',
+                '16:00',
+                '17:00',
+                '18:00',
+                '19:00',
+              ].map((t) => (
                 <option key={t} value={t}>
                   {t} WIB
                 </option>
@@ -161,24 +190,100 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
           </div>
         </div>
 
-        {/* Pilih Layanan */}
+        {/* Pilih Layanan (Multi-Service Support) */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-            Layanan Nail Art:
-          </label>
-          <select
-            value={selectedServiceId}
-            onChange={(e) => setSelectedServiceId(e.target.value)}
-            className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blush-500/20"
-            required
-          >
-            <option value="">-- Pilih Layanan Salon --</option>
-            {services.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} ({s.durationMinutes} mnt) - {formatRupiah(s.basePrice)}
-              </option>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Pilih Layanan Seni Kuku ({selectedServices.length} dipilih):
+            </label>
+            {totalDuration > 0 && (
+              <span className="text-[11px] font-bold text-blush-700">
+                Total Estimasi: {totalDuration} menit (s/d {calculatedEndTime} WIB)
+              </span>
+            )}
+          </div>
+
+          <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-xl p-2 space-y-1 bg-slate-50/50">
+            {services.map((s) => {
+              const isChecked = selectedServiceIds.includes(s.id);
+              return (
+                <label
+                  key={s.id}
+                  className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all text-xs ${
+                    isChecked
+                      ? 'bg-rose-50 border border-blush-300 text-blush-950 font-bold'
+                      : 'hover:bg-slate-100/80 text-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => handleToggleService(s.id)}
+                      className="rounded text-blush-600 focus:ring-blush-500"
+                    />
+                    <span>{s.name}</span>
+                    <span className="text-[10px] text-slate-400 font-normal">
+                      ({s.durationMinutes} mnt)
+                    </span>
+                  </div>
+                  <span className="font-semibold">{formatRupiah(s.basePrice)}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Down Payment (DP) & Ringkasan */}
+        <div className="p-3 bg-amber-50/60 border border-amber-200/80 rounded-xl space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+              Uang Muka / Down Payment (DP):
+            </label>
+            <span className="text-[10px] text-amber-700">
+              *Akan dipotongkan otomatis saat checkout POS
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">Rp</span>
+              <input
+                type="number"
+                value={downPaymentAmount || ''}
+                onChange={(e) => setDownPaymentAmount(Number(e.target.value))}
+                placeholder="0"
+                min="0"
+                className="w-full pl-9 pr-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+
+            {/* Quick DP presets */}
+            {[0, 50000, 100000].map((dpVal) => (
+              <button
+                key={dpVal}
+                type="button"
+                onClick={() => setDownPaymentAmount(dpVal)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  downPaymentAmount === dpVal
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-white border border-amber-200 text-amber-800 hover:bg-amber-100'
+                }`}
+              >
+                {dpVal === 0 ? 'Tanpa DP' : formatRupiah(dpVal)}
+              </button>
             ))}
-          </select>
+          </div>
+
+          <div className="pt-2 border-t border-amber-200/60 flex justify-between text-xs text-amber-950">
+            <span>Estimasi Total: <strong>{formatRupiah(totalPrice)}</strong></span>
+            <span>
+              Sisa Saat Treatment:{' '}
+              <strong className="text-rose-700">
+                {formatRupiah(Math.max(0, totalPrice - downPaymentAmount))}
+              </strong>
+            </span>
+          </div>
         </div>
 
         {/* Catatan / Request Khusus */}

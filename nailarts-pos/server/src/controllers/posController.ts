@@ -15,15 +15,15 @@ export class PosController {
         return;
       }
 
-      const transaction = await PosService.processCheckout({
+      const sale = await PosService.processCheckout({
         ...req.body,
-        cashierId,
+        cashierId: String(cashierId),
       });
 
       res.status(201).json({
         success: true,
         message: 'Transaksi berhasil diselesaikan.',
-        data: transaction,
+        data: sale,
       });
     } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });
@@ -31,7 +31,7 @@ export class PosController {
   }
 
   /**
-   * GET /api/pos/transactions
+   * GET /api/pos/transactions (Sales history)
    */
   static async getTransactions(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -49,9 +49,9 @@ export class PosController {
         whereClause.createdAt = { gte: start, lte: end };
       }
 
-      const [total, transactions] = await Promise.all([
-        prisma.transaction.count({ where: whereClause }),
-        prisma.transaction.findMany({
+      const [total, sales] = await Promise.all([
+        prisma.sale.count({ where: whereClause }),
+        prisma.sale.findMany({
           where: whereClause,
           skip,
           take,
@@ -60,14 +60,15 @@ export class PosController {
             items: true,
             customer: true,
             cashier: { select: { id: true, name: true } },
-            artist: { select: { id: true, name: true } },
+            employee: { include: { user: { select: { id: true, name: true, phone: true } } } },
+            payments: true,
           },
         }),
       ]);
 
       res.json({
         success: true,
-        data: transactions,
+        data: sales,
         meta: { total, page: Number(page), limit: take },
       });
     } catch (error: any) {
@@ -80,25 +81,47 @@ export class PosController {
    */
   static async getTransactionById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      const transaction = await prisma.transaction.findUnique({
+      const id = String(req.params.id);
+      const sale = await prisma.sale.findUnique({
         where: { id },
         include: {
           items: true,
           customer: true,
           cashier: { select: { id: true, name: true, email: true } },
-          artist: { select: { id: true, name: true, phone: true } },
+          employee: { include: { user: { select: { id: true, name: true, phone: true } } } },
+          payments: true,
         },
       });
 
-      if (!transaction) {
+      if (!sale) {
         res.status(404).json({ success: false, message: 'Transaksi tidak ditemukan.' });
         return;
       }
 
-      res.json({ success: true, data: transaction });
+      res.json({ success: true, data: sale });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * POST /api/pos/transactions/:id/refund
+   */
+  static async refund(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const id = String(req.params.id);
+      const { reason = 'Permintaan pembatalan transaksi' } = req.body;
+      const userId = req.user?.id ? String(req.user.id) : 'system';
+
+      const refunded = await PosService.refundSale(id, userId, String(reason));
+
+      res.json({
+        success: true,
+        message: 'Transaksi berhasil di-refund.',
+        data: refunded,
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
     }
   }
 }

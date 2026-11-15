@@ -1,0 +1,11 @@
+# Cloudflare Pages Redirects & Routing Rules
+# https://developers.cloudflare.com/pages/configuration/redirects/
+
+# Optional Backend API Proxy:
+# Jika backend Anda di-hosting di Railway / Render / VPS / Fly.io,
+# Anda dapat mengaktifkan baris di bawah ini agar request /api diarahkan otomatis tanpa CORS:
+# /api/*  https://your-backend-domain.com/api/:splat  200
+
+# SPA (Single Page Application) Fallback
+# Mengarahkan seluruh URL navigasi ke index.html dengan HTTP status 200
+/*    /index.html   200

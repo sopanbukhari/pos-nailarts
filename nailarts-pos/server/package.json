@@ -10,14 +10,17 @@
     "prisma:generate": "prisma generate --schema=../prisma/schema.prisma",
     "prisma:migrate": "prisma db push --schema=../prisma/schema.prisma",
     "seed": "tsx src/config/seed.ts",
-    "test": "echo \"Running test suite...\" && tsx tests/api.test.ts"
+    "test": "echo \"Running test suite...\" && tsx tests/api.test.ts",
+    "test:booking": "tsx tests/booking.test.ts"
   },
   "dependencies": {
+    "@prisma/client": "^6.4.1",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "prisma": "^6.4.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

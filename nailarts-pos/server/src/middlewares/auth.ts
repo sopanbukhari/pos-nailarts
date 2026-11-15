@@ -37,10 +37,19 @@ export const authorize = (allowedRoles: RoleType[]) => {
       return;
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    const currentRole = req.user.role;
+    // Normalize role comparison (ADMIN and OWNER_ADMIN are equivalent)
+    const matches = allowedRoles.some((role) => {
+      if (role === 'ADMIN' || role === 'OWNER_ADMIN') {
+        return currentRole === 'ADMIN' || currentRole === 'OWNER_ADMIN';
+      }
+      return currentRole === role;
+    });
+
+    if (!matches) {
       res.status(403).json({
         success: false,
-        message: `Akses ditolak. Peran '${req.user.role}' tidak memiliki izin untuk tindakan ini.`,
+        message: `Akses ditolak. Peran '${currentRole}' tidak memiliki izin untuk tindakan ini.`,
       });
       return;
     }

@@ -1,75 +1,200 @@
-// Prisma schema for Nail Art POS & Salon Management System
+// Prisma schema for Nail Art POS & Salon Management System (Production PostgreSQL)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
+enum RoleName {
+  OWNER_ADMIN
   CASHIER
   ARTIST
 }
 
-enum BookingStatus {
+enum AppointmentStatus {
   PENDING
   CONFIRMED
+  CHECKED_IN
   IN_PROGRESS
   COMPLETED
   CANCELLED
+  NO_SHOW
+}
+
+enum SaleStatus {
+  PENDING
+  PARTIAL
+  PAID
+  REFUNDED
+  CANCELLED
+}
+
+enum SaleType {
+  WALK_IN
+  APPOINTMENT
 }
 
 enum PaymentMethod {
   CASH
   QRIS
+  BANK_TRANSFER
   CARD
   SPLIT
 }
 
-enum TransactionStatus {
-  COMPLETED
-  REFUNDED
+enum PaymentType {
+  DOWN_PAYMENT
+  FULL
+  REMAINING
+  SPLIT
+}
+
+enum MovementType {
+  STOCK_IN
+  STOCK_OUT
+  SALE_DEDUCTION
+  ADJUSTMENT
+}
+
+enum ExpenseCategory {
+  RENT
+  UTILITIES
+  SUPPLIES
+  SALARY
+  MARKETING
+  MAINTENANCE
+  OTHER
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum ItemType {
+  SERVICE
+  PRODUCT
+}
+
+enum CommissionStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique // OWNER_ADMIN, CASHIER, ARTIST
+  displayName String
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  code        String           @unique // e.g. "pos.checkout", "reports.view"
+  name        String
+  description String?
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
 }
 
 model User {
-  id             String        @id @default(uuid())
-  name           String
-  email          String        @unique
-  password       String
-  role           String        @default("ARTIST") // ADMIN | CASHIER | ARTIST
-  phone          String?
-  commissionRate Float         @default(0.20) // 20% commission default for nail artists
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  password     String
+  phone        String?
+  roleId       String
+  role         Role          @relation(fields: [roleId], references: [id])
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-  bookings       Booking[]     @relation("ArtistBookings")
-  transactions   Transaction[] @relation("CashierTransactions")
-  artistServices Transaction[] @relation("ArtistTransactions")
+  employee     Employee?
+  cashierSales Sale[]        @relation("CashierSales")
+  auditLogs    AuditLog[]
+  expenses     Expense[]     @relation("ExpenseUser")
+  payments     Payment[]     @relation("ReceivedPayments")
+
+  @@map("users")
+}
+
+model Employee {
+  id             String             @id @default(uuid())
+  userId         String             @unique
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeNumber String             @unique
+  position       String             // Senior Nail Artist, Junior Artist, Technician, Cashier
+  hireDate       DateTime           @default(now())
+  baseSalary     Float              @default(0)
+  commissionRate Float              @default(0.20) // default 20%
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  schedules      EmployeeSchedule[]
+  appointments   Appointment[]      @relation("EmployeeAppointments")
+  artistSales    Sale[]             @relation("ArtistSales")
+  commissions    Commission[]
+
+  @@map("employees")
+}
+
+model EmployeeSchedule {
+  id         String   @id @default(uuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int      // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime  String   @default("10:00") // HH:mm
+  endTime    String   @default("20:00") // HH:mm
+  isWorking  Boolean  @default(true)
+
+  @@unique([employeeId, dayOfWeek])
+  @@map("employee_schedules")
 }
 
 model Customer {
-  id                   String        @id @default(uuid())
-  name                 String
-  phone                String        @unique
-  email                String?
-  notes                String?
-  nailShapePreference  String?       // Almond, Coffin, Stiletto, Square, Oval, Round
-  colorPreferences     String?       // e.g. "Nude, Rose Gold, Glossy finish"
-  allergies            String?       // e.g. "Alergi lem kuku tertentu, kuku sensitif"
-  loyaltyPoints        Int           @default(0)
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  id                  String        @id @default(uuid())
+  name                String
+  phone               String        @unique
+  email               String?
+  notes               String?
+  nailShapePreference String?       // Almond, Coffin, Stiletto, Square, Oval, Round
+  colorPreferences    String?       // Nude, Rose Gold, Chrome Glazed, etc.
+  allergies           String?       // Allergy to certain glues, acetone, etc.
+  loyaltyPoints       Int           @default(0)
+  isMember            Boolean       @default(true)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
-  bookings             Booking[]
-  transactions         Transaction[]
+  appointments        Appointment[]
+  sales               Sale[]
+
+  @@map("customers")
 }
 
-model Category {
+model ServiceCategory {
   id          String    @id @default(uuid())
   name        String    @unique
   description String?
@@ -78,23 +203,29 @@ model Category {
   updatedAt   DateTime  @updatedAt
 
   services    Service[]
+
+  @@map("service_categories")
 }
 
 model Service {
-  id              String         @id @default(uuid())
+  id              String               @id @default(uuid())
   name            String
   categoryId      String
-  category        Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category        ServiceCategory      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   basePrice       Float
-  durationMinutes Int            @default(45)
+  durationMinutes Int                  @default(45)
   description     String?
   image           String?
-  isActive        Boolean        @default(true)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  commissionRate  Float?               // Optional override per service
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
 
   addons          ServiceAddon[]
-  bookingItems    BookingItem[]
+  appointmentSvcs AppointmentService[]
+  saleItems       SaleItem[]
+
+  @@map("services")
 }
 
 model ServiceAddon {
@@ -105,81 +236,210 @@ model ServiceAddon {
   price        Float
   extraMinutes Int      @default(15)
   createdAt    DateTime @default(now())
+
+  @@map("service_addons")
 }
 
-model InventoryItem {
+model Product {
+  id             String              @id @default(uuid())
+  sku            String              @unique
+  name           String
+  category       String              // Polish, Gel, Coating, Care, Accessories, Supplies
+  description    String?
+  retailPrice    Float               // Price when sold to customer in POS
+  costPrice      Float               // Purchase cost
+  stockQuantity  Int                 @default(0)
+  minStockAlert  Int                 @default(5)
+  unit           String              @default("pcs") // pcs, botol, box, set
+  isActive       Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  movements      InventoryMovement[]
+  saleItems      SaleItem[]
+
+  @@map("products")
+}
+
+model InventoryMovement {
+  id              String       @id @default(uuid())
+  productId       String
+  product         Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  movementType    MovementType // STOCK_IN, STOCK_OUT, SALE_DEDUCTION, ADJUSTMENT
+  quantity        Int          // Positive or negative
+  beforeQuantity  Int
+  afterQuantity   Int
+  referenceNumber String?      // Invoice number or Restock code
+  notes           String?
+  createdAt       DateTime     @default(now())
+
+  @@map("inventory_movements")
+}
+
+model Appointment {
+  id                     String               @id @default(uuid())
+  customerId             String
+  customer               Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  employeeId             String               // Assigned Nail Artist
+  employee               Employee             @relation("EmployeeAppointments", fields: [employeeId], references: [id], onDelete: Restrict)
+  date                   String               // YYYY-MM-DD
+  startTime              String               // HH:mm
+  endTime                String               // HH:mm
+  totalEstimatedDuration Int                  @default(60) // in minutes
+  totalPrice             Float                @default(0)
+  downPaymentAmount      Float                @default(0)
+  status                 AppointmentStatus    @default(CONFIRMED)
+  notes                  String?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  services               AppointmentService[]
+  sales                  Sale[]
+
+  @@map("appointments")
+}
+
+model AppointmentService {
+  id              String      @id @default(uuid())
+  appointmentId   String
+  appointment     Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  serviceId       String
+  service         Service     @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  price           Float
+  durationMinutes Int
+
+  @@map("appointment_services")
+}
+
+model Sale {
+  id                  String        @id @default(uuid())
+  invoiceNumber       String        @unique
+  customerId          String?
+  customer            Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  cashierId           String
+  cashier             User          @relation("CashierSales", fields: [cashierId], references: [id], onDelete: Restrict)
+  employeeId          String?       // Primary assigned artist
+  employee            Employee?     @relation("ArtistSales", fields: [employeeId], references: [id], onDelete: SetNull)
+  appointmentId       String?
+  appointment         Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  saleType            SaleType      @default(WALK_IN) // WALK_IN or APPOINTMENT
+  subtotal            Float
+  discountAmount      Float         @default(0)
+  discountPercent     Float         @default(0)
+  taxAmount           Float         @default(0)
+  totalAmount         Float
+  paidAmount          Float         @default(0)
+  changeAmount        Float         @default(0)
+  downPaymentDeducted Float         @default(0)
+  remainingAmount     Float         @default(0)
+  status              SaleStatus    @default(PAID) // PENDING, PARTIAL, PAID, REFUNDED, CANCELLED
+  notes               String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  items               SaleItem[]
+  payments            Payment[]
+  commissions         Commission[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@map("sales")
+}
+
+model SaleItem {
+  id                       String     @id @default(uuid())
+  saleId                   String
+  sale                     Sale       @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  itemType                 ItemType   @default(SERVICE) // SERVICE or PRODUCT
+  serviceId                String?
+  service                  Service?   @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  productId                String?
+  product                  Product?   @relation(fields: [productId], references: [id], onDelete: SetNull)
+  itemName                 String
+  basePrice                Float
+  quantity                 Int        @default(1)
+  addonsJson               String?    // Snapshot JSON [{ name, price }]
+  totalPrice               Float
+  employeeCommissionAmount Float      @default(0)
+
+  commissions              Commission[]
+
+  @@map("sale_items")
+}
+
+model Payment {
+  id               String        @id @default(uuid())
+  saleId           String
+  sale             Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  paymentMethod    PaymentMethod @default(CASH) // CASH, QRIS, BANK_TRANSFER, CARD, SPLIT
+  paymentType      PaymentType   @default(FULL) // DOWN_PAYMENT, FULL, REMAINING, SPLIT
+  amount           Float
+  referenceNumber  String?
+  receivedByUserId String?
+  receivedBy       User?         @relation("ReceivedPayments", fields: [receivedByUserId], references: [id], onDelete: SetNull)
+  paidAt           DateTime      @default(now())
+
+  @@map("payments")
+}
+
+model Expense {
+  id              String          @id @default(uuid())
+  category        ExpenseCategory @default(SUPPLIES) // RENT, UTILITIES, SUPPLIES, SALARY, MARKETING, MAINTENANCE, OTHER
+  date            String          // YYYY-MM-DD
+  description     String
+  amount          Float
+  receiptImage    String?
+  createdByUserId String?
+  createdByUser   User?           @relation("ExpenseUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime        @default(now())
+
+  @@map("expenses")
+}
+
+model Commission {
+  id             String           @id @default(uuid())
+  employeeId     String
+  employee       Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  saleId         String
+  sale           Sale             @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  saleItemId     String?
+  saleItem       SaleItem?        @relation(fields: [saleItemId], references: [id], onDelete: SetNull)
+  amount         Float
+  commissionRate Float            @default(0.20)
+  status         CommissionStatus @default(PENDING) // PENDING, PAID, CANCELLED
+  payoutDate     DateTime?
+  createdAt      DateTime         @default(now())
+
+  @@map("commissions")
+}
+
+model Discount {
+  id                String       @id @default(uuid())
+  code              String       @unique
+  name              String
+  type              DiscountType @default(PERCENTAGE) // PERCENTAGE, FIXED
+  value             Float
+  minOrderAmount    Float        @default(0)
+  maxDiscountAmount Float?
+  isActive          Boolean      @default(true)
+  validUntil        DateTime?
+  createdAt         DateTime     @default(now())
+
+  @@map("discounts")
+}
+
+model AuditLog {
   id            String   @id @default(uuid())
-  sku           String   @unique
-  name          String
-  category      String   // Polish / Gel / Tools / Accessories / Sanitizing
-  stockQuantity Int      @default(0)
-  unit          String   @default("pcs") // pcs, botol, set, box
-  minStockAlert Int      @default(5)
-  costPrice     Float    @default(0)
-  supplier      String?
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action        String   // CREATE_SALE, REFUND_SALE, STOCK_ADJUST, CANCEL_APPOINTMENT, etc.
+  entity        String   // Sale, Appointment, Product, Employee, etc.
+  entityId      String?
+  oldValuesJson String?
+  newValuesJson String?
+  ipAddress     String?
+  userAgent     String?
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
 
-model Booking {
-  id          String        @id @default(uuid())
-  customerId  String
-  customer    Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  artistId    String
-  artist      User          @relation("ArtistBookings", fields: [artistId], references: [id], onDelete: Restrict)
-  date        String        // Format: YYYY-MM-DD
-  startTime   String        // Format: HH:mm
-  endTime     String        // Format: HH:mm
-  status      String        @default("PENDING") // PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
-  notes       String?
-  totalPrice  Float         @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  items       BookingItem[]
-}
-
-model BookingItem {
-  id             String   @id @default(uuid())
-  bookingId      String
-  booking        Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  serviceId      String
-  service        Service  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
-  addonNamesJson String?  // JSON stringified array of addon names
-  price          Float
-}
-
-model Transaction {
-  id                 String            @id @default(uuid())
-  invoiceNumber      String            @unique
-  customerId         String?
-  customer           Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  cashierId          String
-  cashier            User              @relation("CashierTransactions", fields: [cashierId], references: [id], onDelete: Restrict)
-  artistId           String?
-  artist             User?             @relation("ArtistTransactions", fields: [artistId], references: [id], onDelete: SetNull)
-  subtotal           Float
-  discount           Float             @default(0)
-  tax                Float             @default(0)
-  total              Float
-  paymentMethod      String            @default("CASH") // CASH, QRIS, CARD, SPLIT
-  paymentDetailsJson String?           // JSON data (e.g., split amounts, card ref, etc.)
-  commissionAmount   Float             @default(0)
-  status             String            @default("COMPLETED") // COMPLETED, REFUNDED
-  createdAt          DateTime          @default(now())
-
-  items              TransactionItem[]
-}
-
-model TransactionItem {
-  id               String      @id @default(uuid())
-  transactionId    String
-  transaction      Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  serviceId        String?
-  serviceName      String
-  basePrice        Float
-  addonsJson       String?     // Array of chosen addons { name, price }
-  quantity         Int         @default(1)
-  totalPrice       Float
-  artistCommission Float       @default(0)
+  @@map("audit_logs")
 }
