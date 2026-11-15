@@ -2,12 +2,10 @@
   "name": "nailarts-pos-monorepo",
   "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "nailarts-pos/client"
-  ],
   "scripts": {
     "build": "npm --prefix nailarts-pos/client install && npm --prefix nailarts-pos/client run build && node -e \"const fs=require('fs'); if(fs.existsSync('nailarts-pos/client/dist')){fs.cpSync('nailarts-pos/client/dist', 'dist', {recursive:true});}\"",
     "build:client": "npm --prefix nailarts-pos/client install && npm --prefix nailarts-pos/client run build"
   }
 }
+
 
