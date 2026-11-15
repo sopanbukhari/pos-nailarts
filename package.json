@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "npm --prefix nailarts-pos/client install && npm --prefix nailarts-pos/client run build && node -e \"const fs=require('fs'); if(fs.existsSync('nailarts-pos/client/dist')){fs.cpSync('nailarts-pos/client/dist', 'dist', {recursive:true});}\"",
+    "build": "npm --prefix nailarts-pos/client install && npm --prefix nailarts-pos/client run build && node -e \"const fs=require('fs'); if(fs.existsSync('nailarts-pos/client/dist')){fs.cpSync('nailarts-pos/client/dist', 'dist', {recursive:true}); const idx='nailarts-pos/client/dist/index.html'; if(fs.existsSync(idx)){fs.copyFileSync(idx, 'nailarts-pos/client/dist/200.html'); fs.copyFileSync(idx, 'dist/200.html');}}\"",
     "build:client": "npm --prefix nailarts-pos/client install && npm --prefix nailarts-pos/client run build"
   }
 }
